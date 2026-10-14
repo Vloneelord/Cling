@@ -1,0 +1,6 @@
+{
+  "name": "Guelmim Express",
+  "description": "Fast real-time delivery tracking and multi-vehicle navigation across Guelmim with Sahara-themed interactive maps.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
