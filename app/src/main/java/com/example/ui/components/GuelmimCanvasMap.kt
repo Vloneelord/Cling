@@ -61,6 +61,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextMeasurer
@@ -172,6 +173,7 @@ fun GuelmimCanvasMap(
                             val screenX = originX + (loc.point.x * mapScale)
                             val screenY = originY + (loc.point.y * mapScale)
                             val dist = sqrt((tapOffset.x - screenX) * (tapOffset.x - screenX) + (tapOffset.y - screenY) * (tapOffset.y - screenY))
+
                             if (dist < 42f) {
                                 onLocationClick(loc)
                                 break
@@ -425,32 +427,34 @@ private fun DrawScope.drawStreetLabels(
 
     // Label for Avenue Mohammed V
     val mohammedVPos = Offset(originX + (495f * scale), originY + (200f * scale))
-    drawText(
-        textMeasurer = textMeasurer,
-        text = "Av. Mohammed V",
-        topLeft = mohammedVPos,
-        style = textStyle
-    )
+    translate(left = mohammedVPos.x, top = mohammedVPos.y) {
+        drawText(
+            textMeasurer = textMeasurer,
+            text = "Av. Mohammed V",
+            style = textStyle
+        )
+    }
 
     // Label for Boulevard Hassan II
     val hassanIIPos = Offset(originX + (220f * scale), originY + (442f * scale))
-    drawText(
-        textMeasurer = textMeasurer,
-        text = "Bd. Hassan II",
-        topLeft = hassanIIPos,
-        style = textStyle
-    )
+    translate(left = hassanIIPos.x, top = hassanIIPos.y) {
+        drawText(
+            textMeasurer = textMeasurer,
+            text = "Bd. Hassan II",
+            style = textStyle
+        )
+    }
 
     // Label for Route de Tighmert
     val tighmertPos = Offset(originX + (730f * scale), originY + (430f * scale))
-    drawText(
-        textMeasurer = textMeasurer,
-        text = "Route de Tighmert (Oasis)",
-        topLeft = tighmertPos,
-        style = textStyle
-    )
+    translate(left = tighmertPos.x, top = tighmertPos.y) {
+        drawText(
+            textMeasurer = textMeasurer,
+            text = "Route de Tighmert (Oasis)",
+            style = textStyle
+        )
+    }
 }
-
 private fun DrawScope.drawDeliveryRoute(
     order: DeliveryOrder,
     scale: Float,
@@ -517,6 +521,7 @@ private fun DrawScope.drawLandmarkMarker(
     textMeasurer: TextMeasurer
 ) {
     val markerRadius = if (isSelected) 14f * scale else 10f * scale
+
     val badgeColor = when (loc.category) {
         LocationCategory.LANDMARK -> TerracottaPrimary
         LocationCategory.MARKET -> SaharaAmber
@@ -738,6 +743,8 @@ private fun DrawScope.drawCourierVehicle(
         size = Size(tagW, tagH),
         cornerRadius = CornerRadius(4f * scale, 4f * scale)
     )
+
+    // FIX: Wrapped in translate instead of using topLeft
     drawText(
         textLayoutResult = speedLayout,
         topLeft = Offset(tagX + (5f * scale), tagY + (2f * scale))
