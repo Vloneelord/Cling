@@ -32,14 +32,17 @@ class ExampleRobolectricTest {
         val to = GuelmimPoint(500f, 750f)   // Bab Sahra
 
         val motoRoute = GuelmimMapData.buildRoutePath(from, to, VehicleType.MOTORCYCLE)
+        val scooterRoute = GuelmimMapData.buildRoutePath(from, to, VehicleType.ESCOOTER)
         val carRoute = GuelmimMapData.buildRoutePath(from, to, VehicleType.CAR)
         val bikeRoute = GuelmimMapData.buildRoutePath(from, to, VehicleType.BICYCLE)
 
         assertTrue("Moto route has waypoints", motoRoute.size >= 3)
+        assertTrue("Scooter route has pedestrian waypoints", scooterRoute.size >= 4)
         assertTrue("Car route has boulevards waypoints", carRoute.size >= 4)
         assertTrue("Bike route has eco waypoints", bikeRoute.size >= 4)
 
         assertEquals(VehicleType.MOTORCYCLE.speedKmH, 42)
+        assertEquals(VehicleType.ESCOOTER.speedKmH, 25)
         assertEquals(VehicleType.CAR.speedKmH, 32)
         assertEquals(VehicleType.BICYCLE.speedKmH, 18)
     }

@@ -3,15 +3,24 @@ package com.example.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.GuelmimMapData
+import com.example.model.AuthState
 import com.example.model.DeliveryOrder
 import com.example.model.DeliveryStatus
+import com.example.model.Driver
 import com.example.model.DriverProfile
 import com.example.model.DriverReview
 import com.example.model.GuelmimLocation
 import com.example.model.GuelmimPoint
+import com.example.model.MenuItem
 import com.example.model.NavigationStep
+import com.example.model.Order
+import com.example.model.OrderStatus
+import com.example.model.Restaurant
+import com.example.model.SampleDeliveryData
 import com.example.model.Store
 import com.example.model.StoreProduct
+import com.example.model.UserRole
+import com.example.model.VehicleOption
 import com.example.model.VehicleType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -39,9 +48,18 @@ data class ChatMessage(
 )
 
 data class DeliveryUiState(
+    val authState: AuthState = AuthState(
+        isAuthenticated = true,
+        currentUser = "Mohamed (Client Guelmim)",
+        role = UserRole.CUSTOMER
+    ),
     val activeScreen: AppScreen = AppScreen.TRACKING,
     val currentOrder: DeliveryOrder? = null,
     val allOrders: List<DeliveryOrder> = emptyList(),
+    val orders: List<Order> = emptyList(), // Domain Order model
+    val restaurants: List<Restaurant> = SampleDeliveryData.restaurants,
+    val drivers: List<Driver> = SampleDeliveryData.drivers,
+    val vehicleOptions: List<VehicleOption> = SampleDeliveryData.vehicleOptions,
     val availableDrivers: List<DriverProfile> = GuelmimMapData.sampleDrivers,
     val reviews: List<DriverReview> = GuelmimMapData.initialReviews,
     val selectedVehicle: VehicleType = VehicleType.MOTORCYCLE,
@@ -58,7 +76,9 @@ data class DeliveryUiState(
     val showRatingDialog: Boolean = false,
     val orderToRate: DeliveryOrder? = null,
     val selectedBusinessStore: Store = GuelmimMapData.sampleStores.first()
-)
+) {
+    val activeTrackedOrder: DeliveryOrder? get() = currentOrder
+}
 
 class DeliveryViewModel : ViewModel() {
 
@@ -82,9 +102,142 @@ class DeliveryViewModel : ViewModel() {
         _uiState.update { it.copy(chatMessages = initialMessages) }
     }
 
+    // ========================================================================
+    // --- 1. AUTHENTICATION & ROLE SWITCHER (Task 2 Specification) ---
+    // ========================================================================
+
+    fun login(role: UserRole, username: String) {
+        val resolvedName = username.ifBlank {
+            when (role) {
+                UserRole.CUSTOMER -> "Mohamed (Client Guelmim)"
+                UserRole.DRIVER -> "Yassine Livreur"
+                UserRole.MERCHANT -> "Bab Sahra Manager"
+            }
+        }
+        _uiState.update {
+            it.copy(
+                authState = AuthState(
+                    isAuthenticated = true,
+                    currentUser = resolvedName,
+                    role = role
+                ),
+                notificationToast = "Logged in as $resolvedName (${role.name})"
+            )
+        }
+    }
+
+    fun switchRole(role: UserRole) {
+        val newTargetScreen = when (role) {
+            UserRole.CUSTOMER -> AppScreen.TRACKING
+            UserRole.DRIVER -> AppScreen.DRIVER_MODE
+            UserRole.MERCHANT -> AppScreen.BUSINESS_PORTAL
+        }
+        login(role, "")
+        setScreen(newTargetScreen)
+    }
+
     fun setScreen(screen: AppScreen) {
         _uiState.update { it.copy(activeScreen = screen) }
     }
+
+    // ========================================================================
+    // --- 2. RESTAURANT & COURIER ORDER PLACEMENT (Task 2 Specification) ---
+    // ========================================================================
+
+    /**
+     * Places a restaurant order, creates an active Order, sets it as activeTrackedOrder,
+     * and navigates to the Track tab.
+     */
+    fun placeRestaurantOrder(restaurant: Restaurant, item: MenuItem) {
+        val pickup = GuelmimMapData.CENTRE_VILLE
+        val dropoff = GuelmimMapData.HAY_AL_QUDS
+        val vehicle = _uiState.value.selectedVehicle
+
+        val newId = "ORD-${(1000..9999).random()}"
+        val route = GuelmimMapData.buildRoutePath(pickup.point, dropoff.point, vehicle)
+        val steps = GuelmimMapData.buildNavigationSteps(vehicle, restaurant.nameEn, "Hay Al Quds Customer")
+
+        val assignedDriver = _uiState.value.drivers.firstOrNull { it.isAvailable } ?: _uiState.value.drivers.first()
+
+        val newDeliveryOrder = DeliveryOrder(
+            id = newId,
+            merchantName = restaurant.nameEn,
+            merchantArabic = restaurant.nameAr,
+            pickupLocation = pickup,
+            dropoffLocation = dropoff,
+            itemsSummary = "${item.nameEn} (1x)",
+            subtotalMAD = item.priceMad,
+            deliveryFeeMAD = vehicle.baseFareMAD.toDouble(),
+            vehicleType = vehicle,
+            status = DeliveryStatus.PLACED,
+            courierName = assignedDriver.name,
+            courierPhone = "+212 6 62 44 19 33",
+            courierPlate = assignedDriver.plateNumber,
+            courierRating = assignedDriver.rating,
+            routePoints = route,
+            currentPosition = route.first(),
+            progressFraction = 0.04f,
+            headingDegrees = 45f,
+            currentSpeedKmH = vehicle.speedKmH.toFloat(),
+            remainingDistanceMeters = 2400,
+            etaMinutes = restaurant.deliveryTimeMin,
+            currentStep = steps.first(),
+            customerName = _uiState.value.authState.currentUser,
+            createdAt = "Just now"
+        )
+
+        val newDomainOrder = Order(
+            id = newId,
+            customerName = _uiState.value.authState.currentUser,
+            pickupLocation = restaurant.nameEn,
+            dropoffLocation = "Hay Al Quds, Guelmim",
+            itemsSummary = "${item.nameEn} (1x)",
+            totalMad = item.priceMad + vehicle.baseFareMAD,
+            status = OrderStatus.PLACED,
+            assignedDriver = assignedDriver,
+            selectedVehicle = vehicle,
+            timestamp = "Just now"
+        )
+
+        _uiState.update {
+            it.copy(
+                currentOrder = newDeliveryOrder,
+                allOrders = listOf(newDeliveryOrder) + it.allOrders,
+                orders = listOf(newDomainOrder) + it.orders,
+                activeScreen = AppScreen.TRACKING,
+                isSimulating = true,
+                notificationToast = "Order #$newId placed for ${item.nameEn}!"
+            )
+        }
+    }
+
+    /**
+     * Dispatches a custom courier delivery order, adds it to orders, sets as activeTrackedOrder,
+     * and navigates to Track tab.
+     */
+    fun dispatchCourierOrder(
+        pickup: String,
+        dropoff: String,
+        packageDesc: String,
+        vehicle: VehicleType
+    ) {
+        val pickupLoc = GuelmimMapData.allLocations.firstOrNull { it.name.contains(pickup, ignoreCase = true) }
+            ?: GuelmimMapData.CENTRE_VILLE
+        val dropoffLoc = GuelmimMapData.allLocations.firstOrNull { it.name.contains(dropoff, ignoreCase = true) }
+            ?: GuelmimMapData.HAY_AL_QUDS
+
+        dispatchNewOrder(
+            pickup = pickupLoc,
+            dropoff = dropoffLoc,
+            vehicle = vehicle,
+            itemsDescription = packageDesc.ifBlank { "Custom Express Parcel" },
+            subtotalMAD = 50.0
+        )
+    }
+
+    // ========================================================================
+    // --- 3. VEHICLE SELECTION & ROUTE RECALCULATION (Task 2 Specification) ---
+    // ========================================================================
 
     fun selectVehicle(vehicleType: VehicleType) {
         val current = _uiState.value.currentOrder ?: return
@@ -117,15 +270,161 @@ class DeliveryViewModel : ViewModel() {
             if (it.id == updatedOrder.id) updatedOrder else it
         }
 
+        val updatedDomainOrders = _uiState.value.orders.map {
+            if (it.id == updatedOrder.id) it.copy(selectedVehicle = vehicleType, totalMad = updatedOrder.subtotalMAD + vehicleType.baseFareMAD) else it
+        }
+
         _uiState.update {
             it.copy(
                 selectedVehicle = vehicleType,
                 currentOrder = updatedOrder,
                 allOrders = updatedAll,
+                orders = updatedDomainOrders,
                 notificationToast = "Switched to ${vehicleType.title} (${vehicleType.arabicTitle})"
             )
         }
     }
+
+    // ========================================================================
+    // --- 4. DRIVER ASSIGNMENT & STATUS ADVANCEMENT (Task 2 Specification) ---
+    // ========================================================================
+
+    /**
+     * Assigns a driver and advances order status to EN_ROUTE.
+     */
+    fun assignDriver(orderId: String, driver: Driver) {
+        val updatedDomainOrders = _uiState.value.orders.map { order ->
+            if (order.id == orderId) {
+                order.copy(assignedDriver = driver, status = OrderStatus.EN_ROUTE)
+            } else {
+                order
+            }
+        }
+
+        val updatedOrders = _uiState.value.allOrders.map { order ->
+            if (order.id == orderId) {
+                order.copy(
+                    courierName = driver.name,
+                    courierPlate = driver.plateNumber,
+                    courierRating = driver.rating,
+                    status = DeliveryStatus.PICKED_UP
+                )
+            } else {
+                order
+            }
+        }
+
+        val updatedCurrent = if (_uiState.value.currentOrder?.id == orderId) {
+            _uiState.value.currentOrder?.copy(
+                courierName = driver.name,
+                courierPlate = driver.plateNumber,
+                courierRating = driver.rating,
+                status = DeliveryStatus.PICKED_UP
+            )
+        } else {
+            _uiState.value.currentOrder
+        }
+
+        _uiState.update {
+            it.copy(
+                orders = updatedDomainOrders,
+                allOrders = updatedOrders,
+                currentOrder = updatedCurrent,
+                notificationToast = "${driver.name} assigned to #$orderId (En Route)",
+                driverNotificationBanner = "🔔 DISPATCH: Assigned ${driver.name} to order #$orderId"
+            )
+        }
+    }
+
+    /**
+     * Moves order through PLACED -> PREPARING -> EN_ROUTE -> NEARBY -> DELIVERED.
+     */
+    fun advanceOrderStatus(orderId: String) {
+        val currentDomainOrder = _uiState.value.orders.find { it.id == orderId }
+        val nextStatus = when (currentDomainOrder?.status) {
+            OrderStatus.PLACED -> OrderStatus.PREPARING
+            OrderStatus.PREPARING -> OrderStatus.EN_ROUTE
+            OrderStatus.EN_ROUTE -> OrderStatus.NEARBY
+            OrderStatus.NEARBY -> OrderStatus.DELIVERED
+            OrderStatus.DELIVERED -> OrderStatus.DELIVERED
+            null -> OrderStatus.PREPARING
+        }
+
+        val nextDeliveryStatus = when (nextStatus) {
+            OrderStatus.PLACED -> DeliveryStatus.PLACED
+            OrderStatus.PREPARING -> DeliveryStatus.PREPARING
+            OrderStatus.EN_ROUTE -> DeliveryStatus.PICKED_UP
+            OrderStatus.NEARBY -> DeliveryStatus.NEARBY
+            OrderStatus.DELIVERED -> DeliveryStatus.DELIVERED
+        }
+
+        val updatedDomainOrders = _uiState.value.orders.map {
+            if (it.id == orderId) it.copy(status = nextStatus) else it
+        }
+
+        val updatedDeliveryOrders = _uiState.value.allOrders.map {
+            if (it.id == orderId) it.copy(status = nextDeliveryStatus) else it
+        }
+
+        val updatedCurrent = if (_uiState.value.currentOrder?.id == orderId) {
+            val updated = _uiState.value.currentOrder?.copy(status = nextDeliveryStatus)
+            if (nextStatus == OrderStatus.DELIVERED && updated != null) {
+                openRatingDialog(updated)
+            }
+            updated
+        } else {
+            _uiState.value.currentOrder
+        }
+
+        _uiState.update {
+            it.copy(
+                orders = updatedDomainOrders,
+                allOrders = updatedDeliveryOrders,
+                currentOrder = updatedCurrent,
+                notificationToast = "Order #$orderId advanced to ${nextStatus.name}"
+            )
+        }
+    }
+
+    /**
+     * Submits driver rating and updates driver's average score.
+     */
+    fun submitDriverRating(orderId: String, stars: Int) {
+        val targetOrder = _uiState.value.orders.find { it.id == orderId }
+        val driverName = targetOrder?.assignedDriver?.name ?: _uiState.value.currentOrder?.courierName ?: "Yassine Livreur"
+
+        // Update Driver in drivers list
+        val updatedDrivers = _uiState.value.drivers.map { driver ->
+            if (driver.name == driverName) {
+                val newCount = driver.deliveriesCount + 1
+                val newScore = ((driver.rating * driver.deliveriesCount + stars) / newCount)
+                driver.copy(
+                    rating = Math.round(newScore * 100.0) / 100.0,
+                    deliveriesCount = newCount
+                )
+            } else {
+                driver
+            }
+        }
+
+        val updatedDomainOrders = _uiState.value.orders.map {
+            if (it.id == orderId) it.copy(rating = stars) else it
+        }
+
+        _uiState.update {
+            it.copy(
+                drivers = updatedDrivers,
+                orders = updatedDomainOrders,
+                notificationToast = "★ $stars-Star rating saved for $driverName!"
+            )
+        }
+
+        submitDriverReview(orderId, stars, "Great service in Guelmim!", listOf("Fast", "Polite"))
+    }
+
+    // ========================================================================
+    // --- 5. SIMULATION CONTROLS & CHAT ---
+    // ========================================================================
 
     fun toggleSimulation() {
         _uiState.update { it.copy(isSimulating = !it.isSimulating) }
@@ -249,7 +548,7 @@ class DeliveryViewModel : ViewModel() {
             id = "rev_${System.currentTimeMillis()}",
             orderId = orderId,
             driverName = driverName,
-            customerName = "Mohamed (Client Guelmim)",
+            customerName = _uiState.value.authState.currentUser,
             rating = rating.coerceIn(1, 5),
             comment = comment.ifBlank { "Delivery arrived safely in Guelmim. Excellent service!" },
             tags = tags.ifEmpty { listOf("Fast Delivery", "Polite") },
@@ -308,7 +607,6 @@ class DeliveryViewModel : ViewModel() {
         val updatedOrders = _uiState.value.allOrders.map { order ->
             if (order.id == orderId) {
                 val updated = order.copy(status = newStatus)
-                // If now marked delivered, offer rating prompt
                 if (newStatus == DeliveryStatus.DELIVERED) {
                     openRatingDialog(updated)
                 }
@@ -324,10 +622,15 @@ class DeliveryViewModel : ViewModel() {
             _uiState.value.currentOrder
         }
 
+        val updatedDomainOrders = _uiState.value.orders.map {
+            if (it.id == orderId) it.copy(status = newStatus.toOrderStatus()) else it
+        }
+
         _uiState.update {
             it.copy(
                 allOrders = updatedOrders,
                 currentOrder = updatedCurrent,
+                orders = updatedDomainOrders,
                 notificationToast = "Order $orderId status updated to ${newStatus.title}"
             )
         }
@@ -388,8 +691,11 @@ class DeliveryViewModel : ViewModel() {
         val speedMpm = (vehicle.speedKmH * 1000f / 60f)
         val etaMin = (distEstMeters / speedMpm).toInt().coerceAtLeast(4)
 
+        val newId = "ORD-${(1000..9999).random()}"
+        val assignedDriver = _uiState.value.drivers.firstOrNull { it.isAvailable } ?: _uiState.value.drivers.first()
+
         val newOrder = DeliveryOrder(
-            id = "ORD-${(1000..9999).random()}",
+            id = newId,
             merchantName = pickup.name,
             merchantArabic = pickup.arabicName,
             pickupLocation = pickup,
@@ -399,10 +705,10 @@ class DeliveryViewModel : ViewModel() {
             deliveryFeeMAD = vehicle.baseFareMAD.toDouble(),
             vehicleType = vehicle,
             status = DeliveryStatus.PLACED,
-            courierName = "Yassine Livreur",
+            courierName = assignedDriver.name,
             courierPhone = "+212 6 62 44 19 33",
-            courierPlate = "48 | ب | 7842",
-            courierRating = 4.95,
+            courierPlate = assignedDriver.plateNumber,
+            courierRating = assignedDriver.rating,
             routePoints = route,
             currentPosition = route.first(),
             progressFraction = 0.05f,
@@ -411,14 +717,28 @@ class DeliveryViewModel : ViewModel() {
             remainingDistanceMeters = distEstMeters,
             etaMinutes = etaMin,
             currentStep = steps.first(),
-            customerName = "Mohamed (Client Guelmim)",
+            customerName = _uiState.value.authState.currentUser,
             createdAt = "Just now"
+        )
+
+        val newDomainOrder = Order(
+            id = newId,
+            customerName = _uiState.value.authState.currentUser,
+            pickupLocation = pickup.name,
+            dropoffLocation = dropoff.name,
+            itemsSummary = itemsDescription,
+            totalMad = subtotalMAD + vehicle.baseFareMAD,
+            status = OrderStatus.PLACED,
+            assignedDriver = assignedDriver,
+            selectedVehicle = vehicle,
+            timestamp = "Just now"
         )
 
         _uiState.update {
             it.copy(
                 currentOrder = newOrder,
                 allOrders = listOf(newOrder) + it.allOrders,
+                orders = listOf(newDomainOrder) + it.orders,
                 selectedVehicle = vehicle,
                 activeScreen = AppScreen.TRACKING,
                 isSimulating = true,
@@ -444,6 +764,8 @@ class DeliveryViewModel : ViewModel() {
         val route = GuelmimMapData.buildRoutePath(pickup.point, dropoff.point, vehicle)
         val steps = GuelmimMapData.buildNavigationSteps(vehicle, pickup.name, dropoff.name)
 
+        val activeDriver = SampleDeliveryData.drivers.first()
+
         val activeOrder = DeliveryOrder(
             id = "ORD-7391",
             merchantName = "Restaurant Bab Sahra",
@@ -451,51 +773,51 @@ class DeliveryViewModel : ViewModel() {
             pickupLocation = pickup,
             dropoffLocation = dropoff,
             itemsSummary = "Sahrawi Camel Meat Tajine & Mint Tea Set",
-            subtotalMAD = 93.0,
+            subtotalMAD = 100.0,
             deliveryFeeMAD = vehicle.baseFareMAD.toDouble(),
             vehicleType = vehicle,
             status = DeliveryStatus.PICKED_UP,
-            courierName = "Yassine Livreur",
+            courierName = activeDriver.name,
             courierPhone = "+212 6 62 44 19 33",
-            courierPlate = "48 | ب | 7842",
-            courierRating = 4.95,
+            courierPlate = activeDriver.plateNumber,
+            courierRating = activeDriver.rating,
             routePoints = route,
-            currentPosition = route.first(),
-            progressFraction = 0.25f,
-            headingDegrees = 30f,
+            currentPosition = if (route.size > 2) route[1] else route.first(),
+            progressFraction = 0.35f,
+            headingDegrees = 45f,
             currentSpeedKmH = vehicle.speedKmH.toFloat(),
-            remainingDistanceMeters = 1850,
-            etaMinutes = 6,
-            currentStep = steps[1],
-            customerName = "Mohamed (Hay Al Quds)",
-            createdAt = "12:15"
+            remainingDistanceMeters = 1560,
+            etaMinutes = 7,
+            currentStep = steps.first(),
+            customerName = "Mohamed (Client Guelmim)",
+            createdAt = "12:30"
         )
 
         val newPendingOrder = DeliveryOrder(
-            id = "ORD-8812",
-            merchantName = "Restaurant Bab Sahra",
-            merchantArabic = "مطعم باب الصحراء",
-            pickupLocation = GuelmimMapData.CENTRE_VILLE,
-            dropoffLocation = GuelmimMapData.HAY_AL_WAHDA,
-            itemsSummary = "Royal Guelmim Couscous (2x) & Moroccan Salad",
-            subtotalMAD = 130.0,
+            id = "ORD-9214",
+            merchantName = "Pâtisserie & Café Tighmert",
+            merchantArabic = "حلويات ومقهى تغمرت",
+            pickupLocation = GuelmimMapData.HAY_OUED_NOUN,
+            dropoffLocation = GuelmimMapData.HAY_AL_QUDS,
+            itemsSummary = "Tighmert Medjool Stuffed Dates & Gazelle Horns",
+            subtotalMAD = 140.0,
             deliveryFeeMAD = 10.0,
             vehicleType = VehicleType.MOTORCYCLE,
             status = DeliveryStatus.PLACED,
-            courierName = "Unassigned",
-            courierPhone = "-",
-            courierPlate = "-",
-            courierRating = 5.0,
-            routePoints = GuelmimMapData.buildRoutePath(GuelmimMapData.CENTRE_VILLE.point, GuelmimMapData.HAY_AL_WAHDA.point, VehicleType.MOTORCYCLE),
-            currentPosition = GuelmimMapData.CENTRE_VILLE.point,
+            courierName = "Amine Sahraoui",
+            courierPhone = "+212 6 55 12 34 56",
+            courierPlate = "48 | ب | 9912",
+            courierRating = 4.90,
+            routePoints = route,
+            currentPosition = route.first(),
             progressFraction = 0.0f,
             headingDegrees = 0f,
             currentSpeedKmH = 0f,
-            remainingDistanceMeters = 1400,
-            etaMinutes = 12,
-            currentStep = GuelmimMapData.buildNavigationSteps(VehicleType.MOTORCYCLE, "Restaurant Bab Sahra", "Hay Al Wahda").first(),
-            customerName = "Karim B. (Hay Al Wahda)",
-            createdAt = "12:28"
+            remainingDistanceMeters = 2400,
+            etaMinutes = 14,
+            currentStep = steps.first(),
+            customerName = "Karim B. (Guelmim)",
+            createdAt = "12:32"
         )
 
         val preparingOrder = DeliveryOrder(
@@ -509,7 +831,7 @@ class DeliveryViewModel : ViewModel() {
             deliveryFeeMAD = 22.0,
             vehicleType = VehicleType.CAR,
             status = DeliveryStatus.PREPARING,
-            courierName = "Redouane Noun",
+            courierName = "Tariq Oasis",
             courierPhone = "+212 6 61 88 92 10",
             courierPlate = "48 | أ | 1290",
             courierRating = 4.88,
@@ -532,7 +854,7 @@ class DeliveryViewModel : ViewModel() {
             pickupLocation = GuelmimMapData.CENTRE_VILLE,
             dropoffLocation = GuelmimMapData.OASIS_TIGHMERT,
             itemsSummary = "Sahrawi Camel Meat Tajine & Mint Tea Set",
-            subtotalMAD = 93.0,
+            subtotalMAD = 100.0,
             deliveryFeeMAD = 10.0,
             vehicleType = VehicleType.MOTORCYCLE,
             status = DeliveryStatus.DELIVERED,
@@ -553,10 +875,18 @@ class DeliveryViewModel : ViewModel() {
             createdAt = "11:45"
         )
 
+        val initialDomainOrders = listOf(
+            Order("ORD-7391", "Mohamed (Client Guelmim)", "Restaurant Bab Sahra", "Hay Al Quds, Guelmim", "Sahrawi Camel Meat Tajine & Mint Tea Set", 110.0, OrderStatus.EN_ROUTE, SampleDeliveryData.drivers[0], vehicle, null, "12:30"),
+            Order("ORD-9214", "Karim B. (Guelmim)", "Pâtisserie & Café Tighmert", "Hay Al Quds, Guelmim", "Tighmert Medjool Stuffed Dates & Gazelle Horns", 150.0, OrderStatus.PLACED, SampleDeliveryData.drivers[1], VehicleType.MOTORCYCLE, null, "12:32"),
+            Order("ORD-8450", "Amina S. (Hay Oued Noun)", "Restaurant Bab Sahra", "Hay Oued Noun, Guelmim", "Grilled Kefta & Merguez Family Pack", 202.0, OrderStatus.PREPARING, SampleDeliveryData.drivers[2], VehicleType.CAR, null, "12:20"),
+            Order("ORD-6821", "Fatima Z. (Oasis de Tighmert)", "Restaurant Bab Sahra", "Oasis Tighmert", "Sahrawi Camel Meat Tajine & Mint Tea Set", 110.0, OrderStatus.DELIVERED, SampleDeliveryData.drivers[0], VehicleType.MOTORCYCLE, 5, "11:45")
+        )
+
         _uiState.update {
             it.copy(
                 currentOrder = activeOrder,
                 allOrders = listOf(activeOrder, newPendingOrder, preparingOrder, deliveredOrder),
+                orders = initialDomainOrders,
                 selectedVehicle = vehicle
             )
         }
@@ -575,7 +905,6 @@ class DeliveryViewModel : ViewModel() {
                     val route = order.routePoints
                     if (route.size >= 2) {
                         val speedMult = state.simulationMultiplier
-                        // Step increment based on vehicle speed
                         val baseIncrement = (order.vehicleType.speedKmH / 40f) * 0.0035f * speedMult
                         var newProgress = order.progressFraction + baseIncrement
 
@@ -583,7 +912,6 @@ class DeliveryViewModel : ViewModel() {
                             newProgress = 1.0f
                         }
 
-                        // Interpolate position along polyline points
                         val totalSegments = route.size - 1
                         val scaled = newProgress * totalSegments
                         val segmentIndex = scaled.toInt().coerceIn(0, totalSegments - 1)
@@ -596,12 +924,10 @@ class DeliveryViewModel : ViewModel() {
                         val curY = p1.y + (p2.y - p1.y) * segmentFrac
                         val curPos = GuelmimPoint(curX, curY)
 
-                        // Calculate heading angle
                         val dx = p2.x - p1.x
                         val dy = p2.y - p1.y
                         val heading = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() + 90f + 360f) % 360f
 
-                        // Status transitions based on progress
                         val newStatus = when {
                             newProgress >= 0.98f -> DeliveryStatus.DELIVERED
                             newProgress >= 0.82f -> DeliveryStatus.NEARBY
@@ -639,10 +965,15 @@ class DeliveryViewModel : ViewModel() {
                             if (it.id == updatedOrder.id) updatedOrder else it
                         }
 
+                        val updatedDomainOrders = state.orders.map {
+                            if (it.id == updatedOrder.id) it.copy(status = newStatus.toOrderStatus()) else it
+                        }
+
                         _uiState.update {
                             it.copy(
                                 currentOrder = updatedOrder,
                                 allOrders = updatedAll,
+                                orders = updatedDomainOrders,
                                 completedOrdersCount = if (wasJustDelivered) it.completedOrdersCount + 1 else it.completedOrdersCount,
                                 showRatingDialog = if (wasJustDelivered && updatedOrder.review == null) true else it.showRatingDialog,
                                 orderToRate = if (wasJustDelivered && updatedOrder.review == null) updatedOrder else it.orderToRate

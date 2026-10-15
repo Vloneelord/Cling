@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
@@ -36,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,37 +45,52 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.GuelmimMapData
-import com.example.model.Store
-import com.example.model.StoreCategory
-import com.example.model.StoreProduct
-import com.example.ui.theme.SaharaAmber
-import com.example.ui.theme.TerracottaPrimary
+import com.example.model.MenuItem
+import com.example.model.Restaurant
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AccentBlue
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.AppBackground
+import com.example.ui.theme.BorderStroke
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.CardSurfaceVariant
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryText
 import com.example.viewmodel.DeliveryViewModel
 
+/**
+ * Modern Sahara Night Merchant & Food Catalog
+ * Fully connected to DeliveryViewModel.placeRestaurantOrder()
+ * Locked to Sahara Night Dark Theme with explicit high-contrast tokens.
+ */
 @Composable
 fun ExploreStoresScreen(
     viewModel: DeliveryViewModel,
     modifier: Modifier = Modifier
 ) {
-    var selectedCategory by remember { mutableStateOf(StoreCategory.ALL) }
+    val uiState by viewModel.uiState.collectAsState()
+    val restaurants = uiState.restaurants
 
-    val filteredStores = remember(selectedCategory) {
-        if (selectedCategory == StoreCategory.ALL) {
-            GuelmimMapData.sampleStores
-        } else {
-            GuelmimMapData.sampleStores.filter { it.category == selectedCategory }
+    var selectedFilterIndex by remember { mutableStateOf(0) }
+    val filterLabels = listOf("All Food", "Bab Sahra", "Tighmert Café")
+
+    val displayedRestaurants = remember(selectedFilterIndex, restaurants) {
+        when (selectedFilterIndex) {
+            1 -> restaurants.filter { it.nameEn.contains("Bab Sahra", ignoreCase = true) }
+            2 -> restaurants.filter { it.nameEn.contains("Tighmert", ignoreCase = true) }
+            else -> restaurants
         }
     }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .background(AppBackground)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -82,44 +99,57 @@ fun ExploreStoresScreen(
         item {
             Column {
                 Text(
-                    text = "Guelmim Merchants",
+                    text = "Guelmim Kitchens & Cafés",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold,
+                    color = PrimaryText
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "محلات ومطاعم كلميم وباب الصحراء",
+                    text = "مطاعم ومطابخ واحة كلميم وباب الصحراء",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline
+                    color = SecondaryText,
+                    textAlign = TextAlign.Start
                 )
             }
         }
 
-        // Category Filter Chips
+        // Filter Chips
         item {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(StoreCategory.values()) { cat ->
-                    val isSelected = selectedCategory == cat
+                items(filterLabels.size) { index ->
+                    val isSelected = selectedFilterIndex == index
                     FilterChip(
                         selected = isSelected,
-                        onClick = { selectedCategory = cat },
-                        label = { Text("${cat.label} • ${cat.arabicLabel}", fontSize = 12.sp) },
+                        onClick = { selectedFilterIndex = index },
+                        label = {
+                            Text(
+                                text = filterLabels[index],
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) PrimaryText else SecondaryText
+                            )
+                        },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = TerracottaPrimary,
-                            selectedLabelColor = Color.White
-                        )
+                            selectedContainerColor = AccentBlue,
+                            selectedLabelColor = PrimaryText,
+                            containerColor = CardSurfaceVariant,
+                            labelColor = SecondaryText
+                        ),
+                        border = BorderStroke(1.dp, if (isSelected) AccentBlue else BorderStroke)
                     )
                 }
             }
         }
 
-        // Store Cards List
-        items(filteredStores) { store ->
-            StoreCard(
-                store = store,
-                onOrderProduct = { product ->
-                    viewModel.orderFromStore(store, product)
+        // Restaurant Cards & Menus
+        items(displayedRestaurants) { restaurant ->
+            RestaurantCard(
+                restaurant = restaurant,
+                onOrderItem = { item ->
+                    viewModel.placeRestaurantOrder(restaurant, item)
                 }
             )
         }
@@ -127,22 +157,22 @@ fun ExploreStoresScreen(
 }
 
 @Composable
-private fun StoreCard(
-    store: Store,
-    onOrderProduct: (StoreProduct) -> Unit
+private fun RestaurantCard(
+    restaurant: Restaurant,
+    onOrderItem: (MenuItem) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, BorderStroke),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Store Title & Meta
+            // Restaurant Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
@@ -150,25 +180,29 @@ private fun StoreCard(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(CircleShape)
-                            .background(TerracottaPrimary.copy(alpha = 0.15f))
+                            .background(CardSurfaceVariant)
+                            .border(1.dp, BorderStroke, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Storefront,
                             contentDescription = null,
-                            tint = TerracottaPrimary
+                            tint = AccentBlue,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = store.name,
+                            text = restaurant.nameEn,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold,
+                            color = PrimaryText
                         )
                         Text(
-                            text = store.arabicName,
+                            text = restaurant.nameAr,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = SecondaryText,
+                            textAlign = TextAlign.Start
                         )
                     }
                 }
@@ -176,7 +210,8 @@ private fun StoreCard(
                 // Rating Badge
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = SaharaAmber.copy(alpha = 0.15f)
+                    color = CardSurfaceVariant,
+                    border = BorderStroke(1.dp, BorderStroke)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -185,22 +220,23 @@ private fun StoreCard(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = SaharaAmber,
+                            tint = AccentAmber,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "${store.rating}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            text = "${restaurant.rating}",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 12.sp,
+                            color = PrimaryText
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Tagline & Location
+            // Address & Delivery ETA
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -208,75 +244,98 @@ private fun StoreCard(
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
+                    tint = SecondaryText,
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${store.location.name} • ${store.avgDeliveryMin} min delivery",
+                    text = "${restaurant.address} • ~${restaurant.deliveryTimeMin} min delivery",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = SecondaryText
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Featured Items / أصناف مميزة:",
+                text = "Featured Menu Items / أطباق مميزة:",
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = AccentAmber
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Products list
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                store.products.forEach { product ->
+            // Menu Items List
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                restaurant.menu.forEach { item ->
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(14.dp),
+                        color = CardSurfaceVariant,
+                        border = BorderStroke(1.dp, BorderStroke),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(10.dp),
+                                .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = product.name,
+                                    text = item.nameEn,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = product.arabicName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                                Text(
-                                    text = "${product.priceMAD.toInt()} DH (MAD)",
-                                    style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TerracottaPrimary
+                                    color = PrimaryText
+                                )
+                                Text(
+                                    text = item.nameAr,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SecondaryText,
+                                    fontSize = 11.sp,
+                                    textAlign = TextAlign.Start
+                                )
+                                if (item.description.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = item.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = SecondaryText.copy(alpha = 0.8f),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "${item.priceMad.toInt()} DH (MAD)",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = AccentEmerald
                                 )
                             }
 
+                            Spacer(modifier = Modifier.width(12.dp))
+
                             Button(
-                                onClick = { onOrderProduct(product) },
+                                onClick = { onOrderItem(item) },
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = TerracottaPrimary),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                modifier = Modifier.testTag("btn_order_${product.id}")
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.testTag("btn_order_${item.id}")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.DeliveryDining,
                                     contentDescription = "Order & Track",
+                                    tint = PrimaryText,
                                     modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Order", fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "Order",
+                                    fontSize = 12.sp,
+                                    color = PrimaryText,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }

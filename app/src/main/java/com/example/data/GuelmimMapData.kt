@@ -320,16 +320,21 @@ object GuelmimMapData {
         val points = mutableListOf<GuelmimPoint>()
         points.add(from)
 
-        // Middle landmark routing via Bir Anzarane or Boulevards
-        val midX: Float
-        val midY: Float
-
         when (vehicle) {
             VehicleType.MOTORCYCLE -> {
                 // Motorcycle can take fast direct souk cuts and alleys
-                midX = (from.x * 0.4f + to.x * 0.6f) + (if (from.x > to.x) -25f else 25f)
-                midY = (from.y * 0.4f + to.y * 0.6f) + (if (from.y > to.y) 15f else -15f)
+                val midX = (from.x * 0.4f + to.x * 0.6f) + (if (from.x > to.x) -25f else 25f)
+                val midY = (from.y * 0.4f + to.y * 0.6f) + (if (from.y > to.y) 15f else -15f)
                 points.add(GuelmimPoint(midX, midY))
+            }
+            VehicleType.ESCOOTER -> {
+                // E-Scooter navigates via pedestrian paths & Place Bir Anzarane square
+                val plazaPoint = GuelmimPoint(480f, 460f)
+                val midWay1 = GuelmimPoint(from.x * 0.6f + plazaPoint.x * 0.4f, from.y * 0.6f + plazaPoint.y * 0.4f)
+                val midWay2 = GuelmimPoint(plazaPoint.x * 0.4f + to.x * 0.6f, plazaPoint.y * 0.4f + to.y * 0.6f)
+                points.add(midWay1)
+                points.add(plazaPoint)
+                points.add(midWay2)
             }
             VehicleType.CAR -> {
                 // Car adheres to major Boulevards (Hassan II or Mohammed V)
@@ -368,6 +373,12 @@ object GuelmimMapData {
                 NavigationStep("Join Avenue Mohammed V northbound", "ادخل شارع محمد الخامس", 750, "TURN_LEFT"),
                 NavigationStep("Cross Place Bir Anzarane roundabout", "اعبر مدارة ساحة بئر أنزران", 200, "ROUNDABOUT"),
                 NavigationStep("Arrive at $dropoffName", "الوصول إلى $dropoffName", 50, "ARRIVED")
+            )
+            VehicleType.ESCOOTER -> listOf(
+                NavigationStep("Glide through $pickupName sidewalk zone", "انطلق بالسكوتر الكهربائي عبر الرصيف", 200, "STRAIGHT"),
+                NavigationStep("Cruise across Place Bir Anzarane pedestrian plaza", "اعبر ساحة بئر أنزران المخصصة للمشاة", 380, "ROUNDABOUT"),
+                NavigationStep("Zip through Avenue Mohammed V dedicated bike path", "اسلك المسار المخصص بشارع محمد الخامس", 450, "TURN_LEFT"),
+                NavigationStep("Arrive smoothly at doorstep $dropoffName", "الوصول السلس لباب $dropoffName", 25, "ARRIVED")
             )
             VehicleType.CAR -> listOf(
                 NavigationStep("Head out onto Boulevard Hassan II", "توجه نحو شارع الحسن الثاني", 400, "STRAIGHT"),
@@ -419,6 +430,17 @@ object GuelmimMapData {
             totalDeliveries = 188,
             isAvailable = true,
             currentNeighborhood = "Hay Al Wahda"
+        ),
+        DriverProfile(
+            id = "drv_hamza",
+            name = "Hamza Sahraoui",
+            phone = "+212 6 78 55 44 33",
+            vehicleType = VehicleType.ESCOOTER,
+            vehiclePlate = "48-E-SCOOT",
+            rating = 4.96,
+            totalDeliveries = 245,
+            isAvailable = true,
+            currentNeighborhood = "Place Bir Anzarane"
         ),
         DriverProfile(
             id = "drv_omar",

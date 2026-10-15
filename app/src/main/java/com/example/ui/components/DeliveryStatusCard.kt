@@ -1,14 +1,17 @@
 package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,18 +23,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,17 +37,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.DeliveryOrder
 import com.example.model.DeliveryStatus
-import com.example.ui.theme.OasisGreen
-import com.example.ui.theme.SaharaAmber
-import com.example.ui.theme.TerracottaPrimary
+import com.example.ui.theme.ModernAmber
+import com.example.ui.theme.ModernBlack
+import com.example.ui.theme.ModernBorder
+import com.example.ui.theme.ModernDarkGray
+import com.example.ui.theme.ModernElectricBlue
+import com.example.ui.theme.ModernEmerald
+import com.example.ui.theme.ModernMuted
+import com.example.ui.theme.ModernSurfaceSubtle
+import com.example.ui.theme.ModernWhite
 
+/**
+ * Modern High-Fidelity Delivery Status Card (OXXO Retail & Zevoa Super App style)
+ * Fixes:
+ * - Total step progress tracker refactoring (centered nodes, 24/20/12dp scale, connecting lines through center, uniform label baselines)
+ * - Start-aligned bilingual turn-by-turn instruction card
+ * - Dual-ring framed circular avatar container
+ * - Uncluttered rating & plate number badge with secondary dividers
+ * - Mathematically centered chat & call icon buttons
+ * - Generous vertical padding and comfortable height for the Live Glide bar
+ */
 @Composable
 fun DeliveryStatusCard(
     order: DeliveryOrder,
@@ -63,18 +76,20 @@ fun DeliveryStatusCard(
     onCallCourier: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 6.dp,
+    val isDark = isSystemInDarkTheme()
+
+    GlassmorphicCard(
+        shape = RoundedCornerShape(26.dp),
+        blurRadius = 18.dp,
+        elevation = 8.dp,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(18.dp)
         ) {
-            // Header: ETA & Status
+            // Header: Status title + Big bold ETA Pill
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -84,76 +99,79 @@ fun DeliveryStatusCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(10.dp)
+                                .size(9.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (order.status == DeliveryStatus.DELIVERED) OasisGreen else TerracottaPrimary
+                                    if (order.status == DeliveryStatus.DELIVERED) ModernEmerald else ModernElectricBlue
                                 )
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = order.status.title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isDark) ModernWhite else ModernBlack
                         )
                     }
                     Text(
                         text = order.status.arabicTitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = ModernMuted,
+                        fontSize = 12.sp
                     )
                 }
 
-                // ETA Big Pill
+                // ETA Big Black Capsule
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = TerracottaPrimary.copy(alpha = 0.12f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, TerracottaPrimary.copy(alpha = 0.3f))
+                    shape = RoundedCornerShape(16.dp),
+                    color = ModernBlack,
+                    modifier = Modifier.testTag("eta_pill")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (order.status == DeliveryStatus.DELIVERED) "Arrived" else "${order.etaMinutes} min",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TerracottaPrimary
+                            text = if (order.status == DeliveryStatus.DELIVERED) "ARRIVED" else "${order.etaMinutes} MIN",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            color = Color.White
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "${order.remainingDistanceMeters} m",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "${order.remainingDistanceMeters}m",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.7f)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Step Progress Bar
-            DeliveryStepProgress(currentStatus = order.status)
+            // Step Progress Bar (Evenly distributed flex/row component)
+            ModernDeliveryStepProgress(currentStatus = order.status)
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Turn-By-Turn Navigation Instruction banner
+            // Turn-By-Turn Navigation Instruction banner with Start-aligned bilingual text
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(16.dp),
+                color = if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle,
+                border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else ModernBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
-                            .background(TerracottaPrimary)
+                            .background(ModernBlack)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Navigation,
@@ -162,100 +180,152 @@ fun DeliveryStatusCard(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.Start
+                    ) {
                         Text(
                             text = order.currentStep.instruction,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) ModernWhite else ModernBlack,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = order.currentStep.arabicInstruction,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.outline
+                            color = ModernMuted,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Courier Card with Contact Buttons
+            // Courier Profile & Contact Actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Courier Avatar
+                    // Styled Dual-Ring Framed Circular Avatar Container
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(SaharaAmber)
+                            .background(if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle)
+                            .border(1.5.dp, if (isDark) Color(0xFF334155) else ModernBorder, CircleShape)
                     ) {
-                        Text(
-                            text = order.courierName.take(2).uppercase(),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(ModernBlack)
+                        ) {
+                            Text(
+                                text = order.courierName.take(2).uppercase(),
+                                color = Color.White,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
                             text = order.courierName,
                             style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) ModernWhite else ModernBlack
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = SaharaAmber,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.height(3.dp))
+                        // Uncluttered Rating & Plate badges with secondary dividers
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = ModernAmber,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "${order.courierRating}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = if (isDark) ModernWhite else ModernBlack
+                                )
+                            }
                             Text(
-                                text = "${order.courierRating} • Plate: ${order.courierPlate}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
+                                text = "•",
+                                color = ModernMuted,
+                                fontSize = 11.sp
                             )
+                            // Plate badge pill
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle,
+                                border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else ModernBorder)
+                            ) {
+                                Text(
+                                    text = order.courierPlate,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = ModernMuted,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                // Action Call & Chat buttons
+                // Call & Chat buttons with mathematically centered icons
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton(
-                        onClick = onOpenChat,
-                        shape = CircleShape,
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
+                    // Chat button
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(42.dp)
+                            .clip(CircleShape)
+                            .background(if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle)
+                            .border(1.dp, if (isDark) Color(0xFF334155) else ModernBorder, CircleShape)
+                            .clickable { onOpenChat() }
                             .testTag("btn_courier_chat")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Chat,
-                            contentDescription = "Chat with Courier",
+                            contentDescription = "Chat",
+                            tint = if (isDark) ModernWhite else ModernBlack,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    Button(
-                        onClick = onCallCourier,
-                        shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = OasisGreen),
+                    // Call button
+                    Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .size(42.dp)
+                            .clip(CircleShape)
+                            .background(ModernBlack)
+                            .clickable { onCallCourier() }
                             .testTag("btn_courier_call")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Call,
-                            contentDescription = "Call Courier",
+                            contentDescription = "Call",
                             tint = Color.White,
                             modifier = Modifier.size(18.dp)
                         )
@@ -263,74 +333,101 @@ fun DeliveryStatusCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Simulation Controls (Play, FastForward 1x/2x/5x, Restart)
+            // Live Simulation Control Console (Live Glide Bar with comfortable padding)
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                shape = RoundedCornerShape(16.dp),
+                color = if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle,
+                border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else ModernBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = onToggleSimulation,
+                    // Play / Pause + Label
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onToggleSimulation() }
+                            .testTag("btn_play_pause_sim")
+                            .padding(end = 6.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(34.dp)
-                                .testTag("btn_play_pause_sim")
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(ModernBlack)
                         ) {
                             Icon(
                                 imageVector = if (isSimulating) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (isSimulating) "Pause" else "Play",
-                                tint = TerracottaPrimary
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                        Text(
-                            text = if (isSimulating) "Live Tracking" else "Paused",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isSimulating) "Live Glide" else "Paused",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = if (isDark) ModernWhite else ModernBlack
+                            )
+                            Text(
+                                text = if (isSimulating) "Tap to pause" else "Tap to glide",
+                                fontSize = 10.sp,
+                                color = ModernMuted
+                            )
+                        }
                     }
 
+                    // Multiplier Pills: 1x, 2x, 5x + Reset
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         listOf(1.0f, 2.0f, 5.0f).forEach { mult ->
                             val isSelected = simMultiplier == mult
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isSelected) TerracottaPrimary else Color.Transparent,
+                                color = if (isSelected) ModernBlack else (if (isDark) Color(0xFF0F172A) else ModernWhite),
+                                border = BorderStroke(1.dp, if (isSelected) ModernBlack else ModernBorder),
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
                                     .clickable { onSetMultiplier(mult) }
                             ) {
                                 Text(
                                     text = "${mult.toInt()}x",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    color = if (isSelected) Color.White else (if (isDark) ModernWhite else ModernBlack),
+                                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                                 )
                             }
                         }
 
-                        IconButton(
-                            onClick = onResetSimulation,
+                        // Reset Route button
+                        Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(34.dp)
-                                .testTag("btn_restart_sim")
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(if (isDark) Color(0xFF0F172A) else ModernWhite)
+                                .border(1.dp, if (isDark) Color(0xFF334155) else ModernBorder, CircleShape)
+                                .clickable { onResetSimulation() }
+                                .testTag("btn_reset_simulation")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Restart simulation",
-                                modifier = Modifier.size(16.dp)
+                                contentDescription = "Restart Route",
+                                tint = if (isDark) ModernWhite else ModernBlack,
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     }
@@ -340,68 +437,132 @@ fun DeliveryStatusCard(
     }
 }
 
+/**
+ * Modern Step Progress Indicator
+ * Evenly distributed flex/row component:
+ * - Step nodes centered vertically on a 28dp high row
+ * - Connecting lines running strictly through node centers
+ * - Coherent design token scale:
+ *     - Completed = 24dp (Emerald + Checkmark)
+ *     - Current   = 20dp (Black + Emerald Ring + White Core)
+ *     - Pending   = 12dp (Neutral Muted Circle)
+ * - Text labels centered directly underneath each corresponding node without overlapping
+ */
 @Composable
-private fun DeliveryStepProgress(currentStatus: DeliveryStatus) {
-    val steps = DeliveryStatus.values()
-    val activeIdx = currentStatus.stepIndex
+private fun ModernDeliveryStepProgress(currentStatus: DeliveryStatus) {
+    val steps = listOf(
+        DeliveryStatus.PLACED to "Placed",
+        DeliveryStatus.PREPARING to "Kitchen",
+        DeliveryStatus.PICKED_UP to "En Route",
+        DeliveryStatus.NEARBY to "Nearby",
+        DeliveryStatus.DELIVERED to "Arrived"
+    )
+
+    val currentIdx = when (currentStatus) {
+        DeliveryStatus.PLACED -> 0
+        DeliveryStatus.PREPARING -> 1
+        DeliveryStatus.PICKED_UP -> 2
+        DeliveryStatus.NEARBY -> 3
+        DeliveryStatus.DELIVERED -> 4
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        // Row 1: Centered Nodes and Horizontal Connecting Lines
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            steps.forEachIndexed { index, step ->
-                val isCompleted = index <= activeIdx
-                val isCurrent = index == activeIdx
+            steps.forEachIndexed { index, (status, _) ->
+                val isCompleted = index < currentIdx || (currentStatus == DeliveryStatus.DELIVERED && index == currentIdx)
+                val isCurrent = index == currentIdx && currentStatus != DeliveryStatus.DELIVERED
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.weight(1f)
+                // Each node slot is centered in a 28dp x 28dp container so lines run through exact center
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(28.dp)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(
-                                when {
-                                    isCurrent -> TerracottaPrimary
-                                    isCompleted -> OasisGreen
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            )
-                    ) {
-                        if (isCompleted && !isCurrent) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(12.dp)
-                            )
-                        } else {
-                            Text(
-                                text = "${index + 1}",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isCurrent) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    when {
+                        isCompleted -> {
+                            // Completed node: 24dp Emerald with white checkmark
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(ModernEmerald)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                        }
+                        isCurrent -> {
+                            // Current node: 20dp Black with emerald ring and white core
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .background(ModernBlack)
+                                    .border(2.dp, ModernEmerald, CircleShape)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
+                            }
+                        }
+                        else -> {
+                            // Pending node: 12dp subtle neutral circle
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(ModernBorder)
                             )
                         }
                     }
+                }
+
+                // Connecting line running strictly through center of nodes
+                if (index < steps.size - 1) {
+                    val lineCompleted = index < currentIdx
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(2.5.dp)
+                            .background(if (lineCompleted) ModernEmerald else ModernBorder)
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        LinearProgressIndicator(
-            progress = { (activeIdx.toFloat() / (steps.size - 1)).coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp)),
-            color = TerracottaPrimary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-            strokeCap = StrokeCap.Round
-        )
+        // Row 2: Fixed-width/distributed text labels with uniform baseline
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            steps.forEachIndexed { index, (_, label) ->
+                val isCurrent = index == currentIdx
+                val isCompleted = index <= currentIdx
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    fontWeight = if (isCurrent) FontWeight.ExtraBold else if (isCompleted) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isCurrent) ModernBlack else if (isCompleted) ModernDarkGray else ModernMuted,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
     }
 }

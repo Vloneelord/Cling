@@ -13,6 +13,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,11 +34,13 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.ElectricScooter
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.TwoWheeler
 import androidx.compose.material3.AlertDialog
@@ -71,7 +74,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material.icons.filled.ReceiptLong
 import com.example.model.VehicleType
 import com.example.ui.components.CourierChatSheet
 import com.example.ui.components.CustomerRatingDialog
@@ -80,9 +82,20 @@ import com.example.ui.screens.DispatchOrderScreen
 import com.example.ui.screens.DriverModeScreen
 import com.example.ui.screens.ExploreStoresScreen
 import com.example.ui.screens.TrackingScreen
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.shadow
+import com.example.ui.theme.GlassFrostedBorder
+import com.example.ui.theme.GlassFrostedDark
+import com.example.ui.theme.GlassFrostedDarkBorder
+import com.example.ui.theme.GlassFrostedSurface
 import com.example.ui.theme.GuelmimExpressTheme
-import com.example.ui.theme.OasisGreen
-import com.example.ui.theme.TerracottaPrimary
+import com.example.ui.theme.ModernBlack
+import com.example.ui.theme.ModernBorder
+import com.example.ui.theme.ModernEmerald
+import com.example.ui.theme.ModernMuted
+import com.example.ui.theme.ModernSurfaceSubtle
+import com.example.ui.theme.ModernWhite
 import com.example.viewmodel.AppScreen
 import com.example.viewmodel.DeliveryViewModel
 
@@ -112,10 +125,10 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
             val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             if (vibrator != null && vibrator.hasVibrator()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                    vibrator.vibrate(VibrationEffect.createOneShot(80, VibrationEffect.DEFAULT_AMPLITUDE))
                 } else {
                     @Suppress("DEPRECATION")
-                    vibrator.vibrate(100)
+                    vibrator.vibrate(80)
                 }
             }
         } catch (_: Exception) {}
@@ -136,15 +149,16 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = ModernWhite,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            GuelmimTopBar(
+            ModernGuelmimTopBar(
                 activeVehicle = uiState.selectedVehicle,
                 activeScreen = uiState.activeScreen
             )
         },
         bottomBar = {
-            GuelmimBottomNavigationBar(
+            ModernGuelmimBottomNavigationBar(
                 activeScreen = uiState.activeScreen,
                 onSelectScreen = {
                     triggerHapticFeedback()
@@ -214,7 +228,7 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
                 )
             }
 
-            // Simulated Phone Call Dialog
+            // Direct Driver Call Dialog
             if (showCallDialog) {
                 val courier = uiState.currentOrder?.courierName ?: "Courier"
                 val phone = uiState.currentOrder?.courierPhone ?: "+212 6 62 44 19 33"
@@ -222,40 +236,41 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
                     onDismissRequest = { showCallDialog = false },
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Call, contentDescription = null, tint = OasisGreen)
+                            Icon(Icons.Default.Call, contentDescription = null, tint = ModernBlack)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Calling $courier")
+                            Text("Calling $courier", fontWeight = FontWeight.Bold, color = ModernBlack)
                         }
                     },
                     text = {
                         Column {
-                            Text("Dialing Guelmim courier direct line:")
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Connecting directly to Guelmim courier:", style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = phone,
-                                fontWeight = FontWeight.Bold,
-                                color = TerracottaPrimary,
-                                fontSize = 16.sp
+                                fontWeight = FontWeight.Black,
+                                color = ModernBlack,
+                                fontSize = 17.sp
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "Livreur is currently en route with ${uiState.selectedVehicle.title}.",
+                                text = "Livreur is currently in motion with ${uiState.selectedVehicle.title} in Guelmim Centre.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
+                                color = ModernMuted
                             )
                         }
                     },
                     confirmButton = {
                         Button(
                             onClick = { showCallDialog = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = OasisGreen)
+                            colors = ButtonDefaults.buttonColors(containerColor = ModernBlack),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Simulate Call")
+                            Text("Connect Call", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showCallDialog = false }) {
-                            Text("Cancel")
+                            Text("Cancel", color = ModernMuted)
                         }
                     }
                 )
@@ -265,89 +280,110 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
 }
 
 @Composable
-fun GuelmimTopBar(
+fun ModernGuelmimTopBar(
     activeVehicle: VehicleType,
     activeScreen: AppScreen
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 3.dp,
-        modifier = Modifier.fillMaxWidth()
+    val isDark = isSystemInDarkTheme()
+    val bgColor = if (isDark) GlassFrostedDark else GlassFrostedSurface
+    val borderColor = if (isDark) GlassFrostedDarkBorder else ModernBorder
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp)
     ) {
-        Row(
+        // Frosted blur backdrop layer
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .matchParentSize()
+                .blur(radius = 16.dp)
+                .background(if (isDark) Color(0xD90A0D14) else Color(0xECFFFFFF))
+        )
+        Surface(
+            color = bgColor,
+            border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(TerracottaPrimary)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeliveryDining,
-                        contentDescription = "Guelmim Express",
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Guelmim Express",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "كلميم",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = TerracottaPrimary,
-                            fontWeight = FontWeight.Bold
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(ModernBlack)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeliveryDining,
+                            contentDescription = "Guelmim Express",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                    Text(
-                        text = "Bab Sahra • Gateway to the Sahara",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        fontSize = 11.sp
-                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "GUELMIM EXPRESS",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 0.5.sp,
+                                color = ModernBlack
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "كلميم",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = ModernMuted,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = "Bab Sahra • Gateway to the Sahara",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ModernMuted,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
-            }
 
-            // Current Vehicle Tag in Top Bar
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = activeVehicle.highlightColor.copy(alpha = 0.14f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Current Vehicle Mode Tag in Top Bar
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = ModernSurfaceSubtle,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
                 ) {
-                    Icon(
-                        imageVector = when (activeVehicle) {
-                            VehicleType.MOTORCYCLE -> Icons.Default.TwoWheeler
-                            VehicleType.CAR -> Icons.Default.DirectionsCar
-                            VehicleType.BICYCLE -> Icons.Default.DirectionsBike
-                        },
-                        contentDescription = null,
-                        tint = activeVehicle.highlightColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = activeVehicle.title,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = activeVehicle.highlightColor
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = when (activeVehicle) {
+                                VehicleType.MOTORCYCLE -> Icons.Default.TwoWheeler
+                                VehicleType.ESCOOTER -> Icons.Default.ElectricScooter
+                                VehicleType.CAR -> Icons.Default.DirectionsCar
+                                VehicleType.BICYCLE -> Icons.Default.DirectionsBike
+                            },
+                            contentDescription = null,
+                            tint = ModernBlack,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(
+                            text = activeVehicle.title,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = ModernBlack
+                        )
+                    }
                 }
             }
         }
@@ -355,51 +391,72 @@ fun GuelmimTopBar(
 }
 
 @Composable
-fun GuelmimBottomNavigationBar(
+fun ModernGuelmimBottomNavigationBar(
     activeScreen: AppScreen,
     onSelectScreen: (AppScreen) -> Unit
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        modifier = Modifier
-            .navigationBarsPadding()
-            .testTag("guelmim_bottom_nav")
-    ) {
-        val navItems = listOf(
-            Triple(AppScreen.TRACKING, "Track", Icons.Default.Map),
-            Triple(AppScreen.EXPLORE_STORES, "Shops", Icons.Default.Storefront),
-            Triple(AppScreen.DISPATCH_ORDER, "Send", Icons.Default.LocalShipping),
-            Triple(AppScreen.BUSINESS_PORTAL, "Orders", Icons.Default.ReceiptLong),
-            Triple(AppScreen.DRIVER_MODE, "Cockpit", Icons.Default.Navigation)
-        )
+    val isDark = isSystemInDarkTheme()
+    val navBgColor = if (isDark) GlassFrostedDark else GlassFrostedSurface
+    val navBorderColor = if (isDark) GlassFrostedDarkBorder else ModernBorder
 
-        navItems.forEach { (screen, label, icon) ->
-            val isSelected = activeScreen == screen
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { onSelectScreen(screen) },
-                icon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = label,
-                        modifier = Modifier.size(22.dp)
-                    )
-                },
-                label = {
-                    Text(
-                        text = label,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.White,
-                    selectedTextColor = TerracottaPrimary,
-                    indicatorColor = TerracottaPrimary
-                ),
-                modifier = Modifier.testTag("nav_item_${screen.name.lowercase()}")
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(12.dp)
+    ) {
+        // Frosted blur backdrop layer
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .blur(radius = 20.dp)
+                .background(if (isDark) Color(0xD90A0D14) else Color(0xECFFFFFF))
+        )
+        NavigationBar(
+            containerColor = navBgColor,
+            tonalElevation = 0.dp,
+            modifier = Modifier
+                .navigationBarsPadding()
+                .border(width = 1.dp, color = navBorderColor)
+                .testTag("guelmim_bottom_nav")
+        ) {
+            val navItems = listOf(
+                Triple(AppScreen.TRACKING, "Track", Icons.Default.Map),
+                Triple(AppScreen.EXPLORE_STORES, "Shops", Icons.Default.Storefront),
+                Triple(AppScreen.DISPATCH_ORDER, "Send", Icons.Default.LocalShipping),
+                Triple(AppScreen.BUSINESS_PORTAL, "Orders", Icons.Default.ReceiptLong),
+                Triple(AppScreen.DRIVER_MODE, "Cockpit", Icons.Default.Navigation)
             )
+
+            navItems.forEach { (screen, label, icon) ->
+                val isSelected = activeScreen == screen
+                NavigationBarItem(
+                    selected = isSelected,
+                    onClick = { onSelectScreen(screen) },
+                    alwaysShowLabel = true,
+                    icon = {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = label,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = label,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color.White,
+                        selectedTextColor = if (isDark) Color.White else ModernBlack,
+                        indicatorColor = ModernBlack,
+                        unselectedIconColor = Color(0xFF9CA3AF),
+                        unselectedTextColor = Color(0xFF9CA3AF)
+                    ),
+                    modifier = Modifier.testTag("nav_item_${screen.name.lowercase()}")
+                )
+            }
         }
     }
 }

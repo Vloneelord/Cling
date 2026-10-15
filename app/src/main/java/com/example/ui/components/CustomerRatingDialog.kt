@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,8 +52,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.model.DeliveryOrder
-import com.example.ui.theme.SaharaAmber
-import com.example.ui.theme.TerracottaPrimary
+import com.example.ui.theme.ModernAmber
+import com.example.ui.theme.ModernBlack
+import com.example.ui.theme.ModernBorder
+import com.example.ui.theme.ModernMuted
+import com.example.ui.theme.ModernSurfaceSubtle
+import com.example.ui.theme.ModernWhite
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -76,9 +81,10 @@ fun CustomerRatingDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(8.dp),
+            shape = RoundedCornerShape(26.dp),
+            colors = CardDefaults.cardColors(containerColor = ModernWhite),
+            elevation = CardDefaults.cardElevation(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, ModernBorder),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
@@ -87,7 +93,7 @@ fun CustomerRatingDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(22.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Close button top right
@@ -97,24 +103,25 @@ fun CustomerRatingDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Rate Delivery Experience",
+                        text = "Rate Delivery",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold,
+                        color = ModernBlack
                     )
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = ModernBlack)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Driver Avatar & Name
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(54.dp)
+                        .size(56.dp)
                         .clip(CircleShape)
-                        .background(SaharaAmber)
+                        .background(ModernBlack)
                 ) {
                     Text(
                         text = order.courierName.take(2).uppercase(),
@@ -129,16 +136,17 @@ fun CustomerRatingDialog(
                 Text(
                     text = order.courierName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold,
+                    color = ModernBlack
                 )
 
                 Text(
                     text = "${order.vehicleType.title} • Plate ${order.courierPlate}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = ModernMuted
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // 1-5 Star Rating Selector
                 Row(
@@ -150,14 +158,14 @@ fun CustomerRatingDialog(
                         IconButton(
                             onClick = { selectedRating = star },
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(44.dp)
                                 .testTag("star_rating_$star")
                         ) {
                             Icon(
                                 imageVector = if (isFilled) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = "$star stars",
-                                tint = if (isFilled) SaharaAmber else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                modifier = Modifier.size(34.dp)
+                                tint = if (isFilled) ModernAmber else ModernBorder,
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                     }
@@ -175,7 +183,7 @@ fun CustomerRatingDialog(
                     text = ratingLabel,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = SaharaAmber
+                    color = if (selectedRating >= 4) ModernBlack else ModernMuted
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -184,7 +192,8 @@ fun CustomerRatingDialog(
                 Text(
                     text = "What went well? / ما الذي أعجبك؟",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
+                    color = ModernBlack,
                     modifier = Modifier.align(Alignment.Start)
                 )
 
@@ -192,7 +201,7 @@ fun CustomerRatingDialog(
 
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     availableTags.forEach { tag ->
@@ -204,14 +213,21 @@ fun CustomerRatingDialog(
                             },
                             label = { Text(text = tag, fontSize = 11.5.sp) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = TerracottaPrimary.copy(alpha = 0.15f),
-                                selectedLabelColor = TerracottaPrimary
+                                selectedContainerColor = ModernBlack,
+                                selectedLabelColor = Color.White,
+                                containerColor = ModernSurfaceSubtle,
+                                labelColor = ModernBlack
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = if (isSelected) ModernBlack else ModernBorder
                             )
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Optional Review Text
                 OutlinedTextField(
@@ -219,15 +235,22 @@ fun CustomerRatingDialog(
                     onValueChange = { reviewComment = it },
                     placeholder = {
                         Text(
-                            text = "Leave a comment for ${order.courierName} and ${order.merchantName}...",
-                            fontSize = 12.5.sp
+                            text = "Leave a note for ${order.courierName}...",
+                            fontSize = 12.sp,
+                            color = ModernMuted
                         )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(90.dp)
+                        .height(85.dp)
                         .testTag("input_review_comment"),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ModernBlack,
+                        unfocusedBorderColor = ModernBorder,
+                        focusedContainerColor = ModernSurfaceSubtle,
+                        unfocusedContainerColor = ModernSurfaceSubtle
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -237,22 +260,23 @@ fun CustomerRatingDialog(
                     onClick = {
                         onSubmitReview(selectedRating, reviewComment, selectedTags.toList())
                     },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TerracottaPrimary),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ModernBlack),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(50.dp)
                         .testTag("btn_submit_driver_review")
                 ) {
                     Text(
                         text = "Submit Review ($selectedRating ★)",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
+                        fontSize = 15.sp,
+                        color = Color.White
                     )
                 }
 
                 TextButton(onClick = onDismiss) {
-                    Text("Maybe Later", color = MaterialTheme.colorScheme.outline)
+                    Text("Maybe Later", color = ModernMuted)
                 }
             }
         }

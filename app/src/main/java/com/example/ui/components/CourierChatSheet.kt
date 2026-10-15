@@ -27,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -43,7 +44,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.TerracottaPrimary
+import com.example.ui.theme.ModernBlack
+import com.example.ui.theme.ModernBorder
+import com.example.ui.theme.ModernMuted
+import com.example.ui.theme.ModernSurfaceSubtle
+import com.example.ui.theme.ModernWhite
 import com.example.viewmodel.ChatMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,12 +72,12 @@ fun CourierChatSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = ModernWhite
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 18.dp, vertical = 8.dp)
         ) {
             // Header
             Row(
@@ -84,20 +89,21 @@ fun CourierChatSheet(
                     Text(
                         text = "Chat with $courierName",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold,
+                        color = ModernBlack
                     )
                     Text(
                         text = "Active Live Delivery in Guelmim",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = ModernMuted
                     )
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close chat")
+                    Icon(Icons.Default.Close, contentDescription = "Close chat", tint = ModernBlack)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Quick replies chips
             LazyRow(
@@ -105,18 +111,30 @@ fun CourierChatSheet(
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
                 items(quickReplies) { reply ->
-                    FilledTonalButton(
-                        onClick = { onSendMessage(reply) },
+                    Surface(
                         shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
+                        color = ModernSurfaceSubtle,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, ModernBorder),
+                        modifier = Modifier.height(34.dp)
                     ) {
-                        Text(text = reply, fontSize = 11.5.sp)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .testTag("chip_reply")
+                        ) {
+                            Text(
+                                text = reply,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ModernBlack
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Message List
             LazyColumn(
@@ -126,24 +144,30 @@ fun CourierChatSheet(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(messages) { msg ->
-                    ChatBubble(msg)
+                    ModernChatBubble(msg)
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Input Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
                     value = textInput,
                     onValueChange = { textInput = it },
-                    placeholder = { Text("Write message to courier...", fontSize = 13.sp) },
+                    placeholder = { Text("Write message to courier...", fontSize = 13.sp, color = ModernMuted) },
                     shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ModernBlack,
+                        unfocusedBorderColor = ModernBorder,
+                        focusedContainerColor = ModernSurfaceSubtle,
+                        unfocusedContainerColor = ModernSurfaceSubtle
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("chat_input_field"),
@@ -160,7 +184,7 @@ fun CourierChatSheet(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(TerracottaPrimary)
+                        .background(ModernBlack)
                         .testTag("btn_send_chat")
                 ) {
                     Icon(
@@ -176,7 +200,7 @@ fun CourierChatSheet(
 }
 
 @Composable
-private fun ChatBubble(message: ChatMessage) {
+private fun ModernChatBubble(message: ChatMessage) {
     val isUser = message.isFromUser
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -189,19 +213,20 @@ private fun ChatBubble(message: ChatMessage) {
                 bottomStart = if (isUser) 16.dp else 4.dp,
                 bottomEnd = if (isUser) 4.dp else 16.dp
             ),
-            color = if (isUser) TerracottaPrimary else MaterialTheme.colorScheme.surfaceVariant,
+            color = if (isUser) ModernBlack else ModernSurfaceSubtle,
+            border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, ModernBorder) else null,
             modifier = Modifier.padding(horizontal = 4.dp)
         ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)) {
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isUser) Color.White else ModernBlack
                 )
                 Text(
                     text = message.timestamp,
                     fontSize = 9.5.sp,
-                    color = if (isUser) Color.White.copy(alpha = 0.75f) else MaterialTheme.colorScheme.outline,
+                    color = if (isUser) Color.White.copy(alpha = 0.7f) else ModernMuted,
                     modifier = Modifier.align(Alignment.End)
                 )
             }

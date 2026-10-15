@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.ElectricScooter
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
@@ -431,6 +432,7 @@ private fun BusinessOrderCard(
                     Icon(
                         imageVector = when (order.vehicleType) {
                             VehicleType.MOTORCYCLE -> Icons.Default.TwoWheeler
+                            VehicleType.ESCOOTER -> Icons.Default.ElectricScooter
                             VehicleType.CAR -> Icons.Default.DirectionsCar
                             VehicleType.BICYCLE -> Icons.Default.DirectionsBike
                         },
