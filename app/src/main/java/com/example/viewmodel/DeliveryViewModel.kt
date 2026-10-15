@@ -206,7 +206,7 @@ class DeliveryViewModel : ViewModel() {
                 orders = listOf(newDomainOrder) + it.orders,
                 activeScreen = AppScreen.TRACKING,
                 isSimulating = true,
-                notificationToast = "Order #$newId placed for ${item.nameEn}!"
+                notificationToast = "Order placed! Redirecting to live tracker..."
             )
         }
     }

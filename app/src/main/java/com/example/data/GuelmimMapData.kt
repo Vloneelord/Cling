@@ -104,6 +104,16 @@ object GuelmimMapData {
         description = "Southern residential district near ring road"
     )
 
+    val ASRIR = GuelmimLocation(
+        id = "loc_asrir",
+        name = "Asrir Oasis",
+        arabicName = "أسرير",
+        district = "Asrir Oasis South",
+        point = GuelmimPoint(820f, 760f),
+        category = LocationCategory.OASIS,
+        description = "Historic oasis community south-east of Guelmim"
+    )
+
     val allLocations = listOf(
         BAB_SAHRA,
         BIR_ANZARANE,
@@ -113,7 +123,8 @@ object GuelmimMapData {
         HAY_OUED_NOUN,
         OASIS_TIGHMERT,
         CENTRE_VILLE,
-        HAY_SALAM
+        HAY_SALAM,
+        ASRIR
     )
 
     // Major avenues for map rendering

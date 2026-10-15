@@ -5,7 +5,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -41,22 +39,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.VehicleType
-import com.example.ui.theme.ModernBlack
-import com.example.ui.theme.ModernBorder
-import com.example.ui.theme.ModernDarkGray
-import com.example.ui.theme.ModernEmerald
-import com.example.ui.theme.ModernMuted
-import com.example.ui.theme.ModernSurfaceSubtle
-import com.example.ui.theme.ModernWhite
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.BorderStroke
+import com.example.ui.theme.CardSurfaceVariant
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryText
 
 /**
- * Modern Segmented Vehicle Mode Switcher (OXXO & Zevoa Super App style)
- * Fixes:
- * - High-contrast white text & icons for selected active card
- * - Unified muted container styling for inactive cards
+ * Modern Segmented Vehicle Mode Switcher
+ * - 4 cards: Moto, E-Scoot, Car, Bike
+ * - Selected card: 2.dp AccentAmber border, tinted icon circle, PrimaryText title & price
+ * - Unselected cards: CardSurfaceVariant with BorderStroke, PrimaryText title & SecondaryText price
  * - Proper edge padding (16dp) preventing horizontal clipping
- * - Clean baseline alignment & line-height for sub-labels
- * - Clean LTR grouping and start-aligned secondary Arabic title
  */
 @Composable
 fun VehicleSelectorRow(
@@ -64,10 +59,8 @@ fun VehicleSelectorRow(
     onVehicleSelected: (VehicleType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
-
     Column(modifier = modifier.fillMaxWidth()) {
-        // Bilingual Header: English primary + dynamic pill, Arabic sub-label cleanly start-aligned
+        // Bilingual Header: English primary + dynamic pill, Arabic sub-label start-aligned
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -81,17 +74,18 @@ fun VehicleSelectorRow(
                     text = "Delivery Vehicle",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isDark) ModernWhite else ModernBlack,
+                    color = PrimaryText,
                     letterSpacing = 0.2.sp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = if (isDark) ModernWhite else ModernBlack
+                    color = CardSurfaceVariant,
+                    border = BorderStroke(1.dp, BorderStroke)
                 ) {
                     Text(
                         text = "DYNAMIC",
-                        color = if (isDark) ModernBlack else Color.White,
+                        color = AccentAmber,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 0.5.sp,
@@ -103,7 +97,7 @@ fun VehicleSelectorRow(
             Text(
                 text = "وسيلة التوصيل المعتمدة",
                 style = MaterialTheme.typography.bodySmall,
-                color = ModernMuted,
+                color = SecondaryText,
                 fontSize = 11.sp,
                 textAlign = TextAlign.Start,
                 modifier = Modifier.fillMaxWidth()
@@ -112,24 +106,22 @@ fun VehicleSelectorRow(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 4 Segmented Vehicle Cards with 16dp edge-safe layout
+        // 4 Segmented Vehicle Cards
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             VehicleType.values().forEach { vehicle ->
                 val isSelected = vehicle == selectedVehicle
 
-                // Inactive cards: Muted subtle dark container in dark mode, light clean subtle in light mode
-                val inactiveBg = if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle
-                val activeBg = if (isDark) Color(0xFF0F172A) else ModernBlack
-
                 val cardBg by animateColorAsState(
-                    targetValue = if (isSelected) activeBg else inactiveBg,
+                    targetValue = if (isSelected) CardSurfaceVariant else CardSurfaceVariant.copy(alpha = 0.65f),
                     label = "cardBg"
                 )
                 val borderColor by animateColorAsState(
-                    targetValue = if (isSelected) vehicle.highlightColor else if (isDark) Color(0xFF334155) else ModernBorder,
+                    targetValue = if (isSelected) AccentAmber else BorderStroke,
                     label = "borderColor"
                 )
 
@@ -150,7 +142,7 @@ fun VehicleSelectorRow(
                             .padding(vertical = 12.dp, horizontal = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Vehicle Icon Circle - High contrast white icon on selected state
+                        // Vehicle Icon Circle
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
@@ -158,14 +150,14 @@ fun VehicleSelectorRow(
                                 .clip(CircleShape)
                                 .background(
                                     if (isSelected) {
-                                        vehicle.highlightColor.copy(alpha = 0.25f)
+                                        AccentAmber.copy(alpha = 0.20f)
                                     } else {
-                                        if (isDark) Color(0xFF0F172A) else ModernWhite
+                                        CardSurfaceVariant
                                     }
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = if (isSelected) vehicle.highlightColor else Color.Transparent,
+                                    color = if (isSelected) AccentAmber else BorderStroke,
                                     shape = CircleShape
                                 )
                         ) {
@@ -177,14 +169,14 @@ fun VehicleSelectorRow(
                                     VehicleType.BICYCLE -> Icons.Default.DirectionsBike
                                 },
                                 contentDescription = vehicle.title,
-                                tint = if (isSelected) Color.White else (if (isDark) ModernWhite else ModernDarkGray),
+                                tint = if (isSelected) PrimaryText else SecondaryText,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Vehicle Short Title - High-contrast white when selected
+                        // Vehicle Short Title
                         Text(
                             text = when (vehicle) {
                                 VehicleType.MOTORCYCLE -> "Moto"
@@ -194,24 +186,24 @@ fun VehicleSelectorRow(
                             },
                             fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
                             fontSize = 12.sp,
-                            color = if (isSelected) Color.White else (if (isDark) ModernWhite else ModernBlack),
+                            color = PrimaryText,
                             textAlign = TextAlign.Center
                         )
 
                         Spacer(modifier = Modifier.height(3.dp))
 
-                        // Fare Badge - High-contrast white/accent when selected
+                        // Fare Badge
                         Text(
                             text = "${vehicle.baseFareMAD} DH",
                             fontWeight = FontWeight.Black,
                             fontSize = 11.sp,
-                            color = if (isSelected) Color.White else ModernMuted,
+                            color = if (isSelected) AccentAmber else SecondaryText,
                             textAlign = TextAlign.Center
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        // Micro Metric (Speed / Eco) - Baseline aligned without colliding
+                        // Speed / Eco Metric
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
@@ -219,7 +211,7 @@ fun VehicleSelectorRow(
                             Icon(
                                 imageVector = Icons.Default.Eco,
                                 contentDescription = null,
-                                tint = if (isSelected) ModernEmerald else (if (vehicle.ecoScore >= 4) ModernEmerald else ModernMuted.copy(alpha = 0.6f)),
+                                tint = if (isSelected) AccentEmerald else (if (vehicle.ecoScore >= 4) AccentEmerald else SecondaryText.copy(alpha = 0.6f)),
                                 modifier = Modifier.size(11.dp)
                             )
                             Spacer(modifier = Modifier.width(2.dp))
@@ -227,7 +219,7 @@ fun VehicleSelectorRow(
                                 text = "${vehicle.speedKmH}k",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (isSelected) Color.White.copy(alpha = 0.85f) else ModernMuted,
+                                color = if (isSelected) PrimaryText else SecondaryText,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -236,34 +228,6 @@ fun VehicleSelectorRow(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Selected Vehicle Info Strip with clear contrast and high readability
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = if (isDark) Color(0xFF1E293B) else ModernSurfaceSubtle,
-            border = BorderStroke(1.dp, if (isDark) Color(0xFF334155) else ModernBorder),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(9.dp)
-                        .clip(CircleShape)
-                        .background(selectedVehicle.highlightColor)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${selectedVehicle.title}: ${selectedVehicle.tagLine}",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 11.sp,
-                    color = if (isDark) ModernWhite else ModernBlack,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }

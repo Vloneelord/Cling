@@ -1,7 +1,8 @@
 package com.example.ui.components
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +33,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,19 +45,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.model.DeliveryOrder
-import com.example.ui.theme.ModernAmber
-import com.example.ui.theme.ModernBlack
-import com.example.ui.theme.ModernBorder
-import com.example.ui.theme.ModernMuted
-import com.example.ui.theme.ModernSurfaceSubtle
-import com.example.ui.theme.ModernWhite
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AccentBlue
+import com.example.ui.theme.BorderStroke
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.CardSurfaceVariant
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryText
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -82,9 +82,9 @@ fun CustomerRatingDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(26.dp),
-            colors = CardDefaults.cardColors(containerColor = ModernWhite),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
             elevation = CardDefaults.cardElevation(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, ModernBorder),
+            border = BorderStroke(1.dp, BorderStroke),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
@@ -96,7 +96,7 @@ fun CustomerRatingDialog(
                     .padding(22.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Close button top right
+                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -106,10 +106,10 @@ fun CustomerRatingDialog(
                         text = "Rate Delivery",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = ModernBlack
+                        color = PrimaryText
                     )
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = ModernBlack)
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = SecondaryText)
                     }
                 }
 
@@ -121,11 +121,12 @@ fun CustomerRatingDialog(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape)
-                        .background(ModernBlack)
+                        .background(CardSurfaceVariant)
+                        .border(1.dp, BorderStroke, CircleShape)
                 ) {
                     Text(
                         text = order.courierName.take(2).uppercase(),
-                        color = Color.White,
+                        color = PrimaryText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -137,13 +138,13 @@ fun CustomerRatingDialog(
                     text = order.courierName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = ModernBlack
+                    color = PrimaryText
                 )
 
                 Text(
                     text = "${order.vehicleType.title} • Plate ${order.courierPlate}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = ModernMuted
+                    color = SecondaryText
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -164,7 +165,7 @@ fun CustomerRatingDialog(
                             Icon(
                                 imageVector = if (isFilled) Icons.Default.Star else Icons.Default.StarBorder,
                                 contentDescription = "$star stars",
-                                tint = if (isFilled) ModernAmber else ModernBorder,
+                                tint = if (isFilled) AccentAmber else BorderStroke,
                                 modifier = Modifier.size(36.dp)
                             )
                         }
@@ -183,7 +184,7 @@ fun CustomerRatingDialog(
                     text = ratingLabel,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (selectedRating >= 4) ModernBlack else ModernMuted
+                    color = AccentAmber
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -193,7 +194,7 @@ fun CustomerRatingDialog(
                     text = "What went well? / ما الذي أعجبك؟",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = ModernBlack,
+                    color = PrimaryText,
                     modifier = Modifier.align(Alignment.Start)
                 )
 
@@ -213,15 +214,15 @@ fun CustomerRatingDialog(
                             },
                             label = { Text(text = tag, fontSize = 11.5.sp) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = ModernBlack,
-                                selectedLabelColor = Color.White,
-                                containerColor = ModernSurfaceSubtle,
-                                labelColor = ModernBlack
+                                selectedContainerColor = AccentBlue,
+                                selectedLabelColor = PrimaryText,
+                                containerColor = CardSurfaceVariant,
+                                labelColor = SecondaryText
                             ),
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
                                 selected = isSelected,
-                                borderColor = if (isSelected) ModernBlack else ModernBorder
+                                borderColor = if (isSelected) AccentBlue else BorderStroke
                             )
                         )
                     }
@@ -229,7 +230,7 @@ fun CustomerRatingDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Optional Review Text
+                // Review Text
                 OutlinedTextField(
                     value = reviewComment,
                     onValueChange = { reviewComment = it },
@@ -237,7 +238,7 @@ fun CustomerRatingDialog(
                         Text(
                             text = "Leave a note for ${order.courierName}...",
                             fontSize = 12.sp,
-                            color = ModernMuted
+                            color = SecondaryText
                         )
                     },
                     modifier = Modifier
@@ -246,10 +247,12 @@ fun CustomerRatingDialog(
                         .testTag("input_review_comment"),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = ModernBlack,
-                        unfocusedBorderColor = ModernBorder,
-                        focusedContainerColor = ModernSurfaceSubtle,
-                        unfocusedContainerColor = ModernSurfaceSubtle
+                        focusedTextColor = PrimaryText,
+                        unfocusedTextColor = PrimaryText,
+                        focusedBorderColor = AccentBlue,
+                        unfocusedBorderColor = BorderStroke,
+                        focusedContainerColor = CardSurfaceVariant,
+                        unfocusedContainerColor = CardSurfaceVariant
                     )
                 )
 
@@ -261,7 +264,7 @@ fun CustomerRatingDialog(
                         onSubmitReview(selectedRating, reviewComment, selectedTags.toList())
                     },
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ModernBlack),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentAmber),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
@@ -271,12 +274,12 @@ fun CustomerRatingDialog(
                         text = "Submit Review ($selectedRating ★)",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = Color.White
+                        color = CardSurface
                     )
                 }
 
                 TextButton(onClick = onDismiss) {
-                    Text("Maybe Later", color = ModernMuted)
+                    Text("Maybe Later", color = SecondaryText)
                 }
             }
         }

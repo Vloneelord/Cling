@@ -101,12 +101,20 @@ import com.example.ui.theme.MapRiverAzureDark
 import com.example.ui.theme.MapRouteFuture
 import com.example.ui.theme.MapRouteGlowCore
 import com.example.ui.theme.MapRouteTraveled
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AccentBlue
+import com.example.ui.theme.AccentEmerald
+import com.example.ui.theme.BorderStroke
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.CardSurfaceVariant
 import com.example.ui.theme.ModernAmber
 import com.example.ui.theme.ModernBlack
 import com.example.ui.theme.ModernElectricBlue
 import com.example.ui.theme.ModernEmerald
 import com.example.ui.theme.ModernMuted
 import com.example.ui.theme.ModernWhite
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryText
 import kotlin.math.sqrt
 
 /**
@@ -116,7 +124,7 @@ import kotlin.math.sqrt
  * smooth 60fps vehicle glide, animated radar ripples, and micro-mobility routing.
  */
 @Composable
-fun GuelmimCanvasMap(
+fun GuelmimMapCanvas(
     order: DeliveryOrder?,
     isFollowCourier: Boolean,
     showTraffic: Boolean,
@@ -124,6 +132,7 @@ fun GuelmimCanvasMap(
     onLocationClick: (GuelmimLocation) -> Unit,
     onToggleFollowCourier: () -> Unit,
     onToggleTraffic: () -> Unit,
+    visibleCenterFractionY: Float = 0.32f,
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
@@ -207,7 +216,7 @@ fun GuelmimCanvasMap(
                     detectTapGestures { tapOffset ->
                         val mapScale = (size.width.coerceAtMost(size.height) / 1000f) * zoomLevel
                         val originX = (size.width / 2f) + panOffsetX - (500f * mapScale)
-                        val originY = (size.height / 2f) + panOffsetY - (500f * mapScale)
+                        val originY = (size.height * visibleCenterFractionY) + panOffsetY - (500f * mapScale)
 
                         for (loc in GuelmimMapData.allLocations) {
                             val screenX = originX + (loc.point.x * mapScale)
@@ -229,7 +238,7 @@ fun GuelmimCanvasMap(
             val scale = (baseDimension / 1000f) * zoomLevel
 
             val originX = (canvasW / 2f) + panOffsetX - (500f * scale)
-            val originY = (canvasH / 2f) + panOffsetY - (500f * scale)
+            val originY = (canvasH * visibleCenterFractionY) + panOffsetY - (500f * scale)
 
             fun mapToScreen(point: GuelmimPoint): Offset {
                 return Offset(
@@ -336,6 +345,34 @@ fun GuelmimCanvasMap(
                 .padding(16.dp)
         )
     }
+}
+
+/**
+ * Backward-compatible alias for GuelmimMapCanvas
+ */
+@Composable
+fun GuelmimCanvasMap(
+    order: DeliveryOrder?,
+    isFollowCourier: Boolean,
+    showTraffic: Boolean,
+    selectedLocation: GuelmimLocation?,
+    onLocationClick: (GuelmimLocation) -> Unit,
+    onToggleFollowCourier: () -> Unit,
+    onToggleTraffic: () -> Unit,
+    visibleCenterFractionY: Float = 0.32f,
+    modifier: Modifier = Modifier
+) {
+    GuelmimMapCanvas(
+        order = order,
+        isFollowCourier = isFollowCourier,
+        showTraffic = showTraffic,
+        selectedLocation = selectedLocation,
+        onLocationClick = onLocationClick,
+        onToggleFollowCourier = onToggleFollowCourier,
+        onToggleTraffic = onToggleTraffic,
+        visibleCenterFractionY = visibleCenterFractionY,
+        modifier = modifier
+    )
 }
 
 /**
@@ -524,7 +561,7 @@ private fun DrawScope.drawBirAnzaraneRoundabout(scale: Float, originX: Float, or
 }
 
 /**
- * Draws clean street labels.
+ * Draws clean, high-contrast street labels with frosted dark pills.
  */
 private fun DrawScope.drawModernStreetLabels(
     scale: Float,
@@ -533,30 +570,54 @@ private fun DrawScope.drawModernStreetLabels(
     isDark: Boolean,
     textMeasurer: TextMeasurer
 ) {
-    val labelColor = if (isDark) Color(0xFFCBD5E1) else ModernMuted
     val textStyle = TextStyle(
-        fontSize = (9.5f * scale).coerceIn(8f, 13f).sp,
+        fontSize = (9.5f * scale).coerceIn(8.5f, 12.5f).sp,
         fontWeight = FontWeight.Bold,
-        color = labelColor
+        color = if (isDark) Color(0xFFF9FAFB) else Color(0xFF0F172A)
     )
 
-    // Av. Mohammed V
-    val mohammedVPos = Offset(originX + (495f * scale), originY + (200f * scale))
-    translate(left = mohammedVPos.x, top = mohammedVPos.y) {
-        drawText(textMeasurer = textMeasurer, text = "Av. Mohammed V", style = textStyle)
+    fun drawPillLabel(text: String, x: Float, y: Float) {
+        val layout = textMeasurer.measure(text = text, style = textStyle)
+        val pillW = layout.size.width + (14f * scale)
+        val pillH = layout.size.height + (8f * scale)
+        val left = x - (pillW / 2f)
+        val top = y - (pillH / 2f)
+
+        // Subtle background pill
+        drawRoundRect(
+            color = if (isDark) Color(0xF0111827) else Color(0xF0FFFFFF),
+            topLeft = Offset(left, top),
+            size = Size(pillW, pillH),
+            cornerRadius = CornerRadius(5f * scale, 5f * scale)
+        )
+        // High-contrast subtle border
+        drawRoundRect(
+            color = if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0),
+            topLeft = Offset(left, top),
+            size = Size(pillW, pillH),
+            cornerRadius = CornerRadius(5f * scale, 5f * scale),
+            style = Stroke(width = 1f * scale)
+        )
+        drawText(
+            textLayoutResult = layout,
+            topLeft = Offset(left + (7f * scale), top + (4f * scale))
+        )
     }
 
-    // Bd. Hassan II
-    val hassanIIPos = Offset(originX + (220f * scale), originY + (440f * scale))
-    translate(left = hassanIIPos.x, top = hassanIIPos.y) {
-        drawText(textMeasurer = textMeasurer, text = "Bd. Hassan II", style = textStyle)
-    }
+    // 1. Avenue Mohammed V (Central North Avenue)
+    drawPillLabel("Avenue Mohammed V", originX + (495f * scale), originY + (205f * scale))
 
-    // Route de Tighmert
-    val tighmertPos = Offset(originX + (730f * scale), originY + (430f * scale))
-    translate(left = tighmertPos.x, top = tighmertPos.y) {
-        drawText(textMeasurer = textMeasurer, text = "Route Tighmert", style = textStyle)
-    }
+    // 2. Boulevard Hassan II (South-West Main Commercial Boulevard)
+    drawPillLabel("Boulevard Hassan II", originX + (220f * scale), originY + (440f * scale))
+
+    // 3. Route de Tighmert (Eastern Oasis Route)
+    drawPillLabel("Route de Tighmert", originX + (730f * scale), originY + (430f * scale))
+
+    // 4. Place Bir Anzarane (Central Roundabout Hub)
+    drawPillLabel("Place Bir Anzarane", originX + (480f * scale), originY + (510f * scale))
+
+    // 5. Hay Al Wahda (Western Residential Sector)
+    drawPillLabel("Hay Al Wahda", originX + (305f * scale), originY + (355f * scale))
 }
 
 /**
@@ -875,6 +936,8 @@ private fun FrostedTrackingStatusBar(
 ) {
     GlassmorphicCard(
         shape = RoundedCornerShape(20.dp),
+        backgroundColor = CardSurface,
+        borderColor = BorderStroke,
         blurRadius = 16.dp,
         elevation = 8.dp,
         modifier = modifier
@@ -889,12 +952,12 @@ private fun FrostedTrackingStatusBar(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
-                    .background(ModernBlack)
+                    .background(CardSurfaceVariant)
             ) {
                 Icon(
                     imageVector = Icons.Default.Navigation,
                     contentDescription = null,
-                    tint = ModernEmerald,
+                    tint = AccentEmerald,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -905,20 +968,20 @@ private fun FrostedTrackingStatusBar(
                         text = if (order.status == DeliveryStatus.DELIVERED) "Delivered" else "${order.etaMinutes} MIN",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = ModernBlack
+                        color = PrimaryText
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "• ${order.status.title}",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (order.status == DeliveryStatus.DELIVERED) ModernEmerald else ModernElectricBlue
+                        color = if (order.status == DeliveryStatus.DELIVERED) AccentEmerald else AccentBlue
                     )
                 }
                 Text(
                     text = "${order.dropoffLocation.name} (${order.dropoffLocation.district})",
                     style = MaterialTheme.typography.bodySmall,
-                    color = ModernMuted,
+                    color = SecondaryText,
                     fontSize = 11.sp
                 )
             }
@@ -948,8 +1011,8 @@ private fun ModernMapControlsOverlay(
         // Recenter / Follow Courier button
         GlassmorphicCard(
             shape = CircleShape,
-            backgroundColor = if (isFollowCourier) ModernBlack else null,
-            borderColor = if (isFollowCourier) ModernBlack else null,
+            backgroundColor = if (isFollowCourier) AccentBlue else CardSurface,
+            borderColor = if (isFollowCourier) AccentBlue else BorderStroke,
             blurRadius = 16.dp,
             elevation = 6.dp,
             modifier = Modifier.size(44.dp)
@@ -963,7 +1026,7 @@ private fun ModernMapControlsOverlay(
                 Icon(
                     imageVector = if (isFollowCourier) Icons.Default.MyLocation else Icons.Default.LocationSearching,
                     contentDescription = "Follow Courier",
-                    tint = if (isFollowCourier) Color.White else ModernBlack,
+                    tint = PrimaryText,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -972,8 +1035,8 @@ private fun ModernMapControlsOverlay(
         // Traffic Flow toggle
         GlassmorphicCard(
             shape = CircleShape,
-            backgroundColor = if (showTraffic) ModernEmerald else null,
-            borderColor = if (showTraffic) ModernEmerald else null,
+            backgroundColor = if (showTraffic) AccentEmerald else CardSurface,
+            borderColor = if (showTraffic) AccentEmerald else BorderStroke,
             blurRadius = 16.dp,
             elevation = 6.dp,
             modifier = Modifier.size(44.dp)
@@ -987,7 +1050,7 @@ private fun ModernMapControlsOverlay(
                 Icon(
                     imageVector = Icons.Default.Layers,
                     contentDescription = "Traffic Flow",
-                    tint = if (showTraffic) Color.White else ModernBlack,
+                    tint = if (showTraffic) CardSurface else PrimaryText,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -996,6 +1059,8 @@ private fun ModernMapControlsOverlay(
         // Zoom Controls Capsule
         GlassmorphicCard(
             shape = RoundedCornerShape(22.dp),
+            backgroundColor = CardSurface,
+            borderColor = BorderStroke,
             blurRadius = 16.dp,
             elevation = 6.dp,
             modifier = Modifier.width(44.dp)
@@ -1007,13 +1072,13 @@ private fun ModernMapControlsOverlay(
                         .size(44.dp)
                         .testTag("btn_zoom_in")
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Zoom In", tint = ModernBlack)
+                    Icon(Icons.Default.Add, contentDescription = "Zoom In", tint = PrimaryText)
                 }
                 Box(
                     modifier = Modifier
                         .width(24.dp)
                         .height(1.dp)
-                        .background(GlassFrostedBorder)
+                        .background(BorderStroke)
                 )
                 IconButton(
                     onClick = onZoomOut,
@@ -1021,7 +1086,7 @@ private fun ModernMapControlsOverlay(
                         .size(44.dp)
                         .testTag("btn_zoom_out")
                 ) {
-                    Icon(Icons.Default.Remove, contentDescription = "Zoom Out", tint = ModernBlack)
+                    Icon(Icons.Default.Remove, contentDescription = "Zoom Out", tint = PrimaryText)
                 }
             }
         }
@@ -1032,6 +1097,8 @@ private fun ModernMapControlsOverlay(
 private fun ModernGuelmimBadge(modifier: Modifier = Modifier) {
     GlassmorphicCard(
         shape = RoundedCornerShape(18.dp),
+        backgroundColor = CardSurface,
+        borderColor = BorderStroke,
         blurRadius = 16.dp,
         elevation = 6.dp,
         modifier = modifier
@@ -1045,12 +1112,12 @@ private fun ModernGuelmimBadge(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
-                    .background(ModernBlack)
+                    .background(CardSurfaceVariant)
             ) {
                 Icon(
                     imageVector = Icons.Default.Explore,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = AccentBlue,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -1060,12 +1127,12 @@ private fun ModernGuelmimBadge(modifier: Modifier = Modifier) {
                     text = "Guelmim • كلميم",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = ModernBlack
+                    color = PrimaryText
                 )
                 Text(
                     text = "Bab Sahra • Live Map",
                     style = MaterialTheme.typography.bodySmall,
-                    color = ModernMuted,
+                    color = SecondaryText,
                     fontSize = 11.sp
                 )
             }

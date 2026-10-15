@@ -3,7 +3,6 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
@@ -64,9 +64,11 @@ import com.example.ui.theme.SecondaryText
 import com.example.viewmodel.DeliveryViewModel
 
 /**
- * Modern Sahara Night Merchant & Food Catalog
+ * Modern Sahara Night Merchant & Food Catalog (Tab 1: Shops)
  * Fully connected to DeliveryViewModel.placeRestaurantOrder()
- * Locked to Sahara Night Dark Theme with explicit high-contrast tokens.
+ * - Background: AppBackground (0xFF070B14)
+ * - Cards: CardSurface (0xFF111827)
+ * - "+ Order" button triggers direct placement & redirects to TrackScreen
  */
 @Composable
 fun ExploreStoresScreen(
@@ -301,7 +303,7 @@ private fun RestaurantCard(
                                     Text(
                                         text = item.description,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = SecondaryText.copy(alpha = 0.8f),
+                                        color = SecondaryText.copy(alpha = 0.85f),
                                         fontSize = 10.sp
                                     )
                                 }
@@ -324,14 +326,14 @@ private fun RestaurantCard(
                                 modifier = Modifier.testTag("btn_order_${item.id}")
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.DeliveryDining,
-                                    contentDescription = "Order & Track",
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "+ Order",
                                     tint = PrimaryText,
                                     modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(5.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Order",
+                                    text = "+ Order",
                                     fontSize = 12.sp,
                                     color = PrimaryText,
                                     fontWeight = FontWeight.Bold

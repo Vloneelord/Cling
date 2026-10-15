@@ -9,9 +9,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,17 +26,16 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.DeliveryDining
 import androidx.compose.material.icons.filled.DirectionsBike
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.ElectricScooter
-import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Navigation
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.TwoWheeler
@@ -66,7 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -78,24 +74,19 @@ import com.example.model.VehicleType
 import com.example.ui.components.CourierChatSheet
 import com.example.ui.components.CustomerRatingDialog
 import com.example.ui.screens.BusinessOrderManagementScreen
+import com.example.ui.screens.CockpitScreen
 import com.example.ui.screens.DispatchOrderScreen
-import com.example.ui.screens.DriverModeScreen
 import com.example.ui.screens.ExploreStoresScreen
 import com.example.ui.screens.TrackingScreen
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.shadow
-import com.example.ui.theme.GlassFrostedBorder
-import com.example.ui.theme.GlassFrostedDark
-import com.example.ui.theme.GlassFrostedDarkBorder
-import com.example.ui.theme.GlassFrostedSurface
+import com.example.ui.theme.AccentAmber
+import com.example.ui.theme.AccentBlue
+import com.example.ui.theme.AppBackground
+import com.example.ui.theme.BorderStroke
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.CardSurfaceVariant
 import com.example.ui.theme.GuelmimExpressTheme
-import com.example.ui.theme.ModernBlack
-import com.example.ui.theme.ModernBorder
-import com.example.ui.theme.ModernEmerald
-import com.example.ui.theme.ModernMuted
-import com.example.ui.theme.ModernSurfaceSubtle
-import com.example.ui.theme.ModernWhite
+import com.example.ui.theme.PrimaryText
+import com.example.ui.theme.SecondaryText
 import com.example.viewmodel.AppScreen
 import com.example.viewmodel.DeliveryViewModel
 
@@ -114,9 +105,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-
+    val context = LocalContext.current
     var showCallDialog by remember { mutableStateOf(false) }
 
     // Haptic vibration feedback helper
@@ -149,7 +139,7 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = ModernWhite,
+        containerColor = AppBackground,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             ModernGuelmimTopBar(
@@ -189,14 +179,14 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
                 AppScreen.DISPATCH_ORDER -> {
                     DispatchOrderScreen(viewModel = viewModel)
                 }
-                AppScreen.DRIVER_MODE -> {
-                    DriverModeScreen(
+                AppScreen.BUSINESS_PORTAL -> {
+                    BusinessOrderManagementScreen(
                         uiState = uiState,
                         viewModel = viewModel
                     )
                 }
-                AppScreen.BUSINESS_PORTAL -> {
-                    BusinessOrderManagementScreen(
+                AppScreen.DRIVER_MODE -> {
+                    CockpitScreen(
                         uiState = uiState,
                         viewModel = viewModel
                     )
@@ -228,49 +218,50 @@ fun GuelmimExpressApp(viewModel: DeliveryViewModel = viewModel()) {
                 )
             }
 
-            // Direct Driver Call Dialog
+            // Direct Driver Call Dialog (Locked to dark card surface)
             if (showCallDialog) {
                 val courier = uiState.currentOrder?.courierName ?: "Courier"
                 val phone = uiState.currentOrder?.courierPhone ?: "+212 6 62 44 19 33"
                 AlertDialog(
                     onDismissRequest = { showCallDialog = false },
+                    containerColor = CardSurface,
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Call, contentDescription = null, tint = ModernBlack)
+                            Icon(Icons.Default.Call, contentDescription = null, tint = AccentBlue)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Calling $courier", fontWeight = FontWeight.Bold, color = ModernBlack)
+                            Text("Calling $courier", fontWeight = FontWeight.Bold, color = PrimaryText)
                         }
                     },
                     text = {
                         Column {
-                            Text("Connecting directly to Guelmim courier:", style = MaterialTheme.typography.bodyMedium)
+                            Text("Connecting directly to Guelmim courier:", style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = phone,
                                 fontWeight = FontWeight.Black,
-                                color = ModernBlack,
+                                color = PrimaryText,
                                 fontSize = 17.sp
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
                                 text = "Livreur is currently in motion with ${uiState.selectedVehicle.title} in Guelmim Centre.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = ModernMuted
+                                color = SecondaryText
                             )
                         }
                     },
                     confirmButton = {
                         Button(
                             onClick = { showCallDialog = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = ModernBlack),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Connect Call", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("Connect Call", color = PrimaryText, fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showCallDialog = false }) {
-                            Text("Cancel", color = ModernMuted)
+                            Text("Cancel", color = SecondaryText)
                         }
                     }
                 )
@@ -284,106 +275,92 @@ fun ModernGuelmimTopBar(
     activeVehicle: VehicleType,
     activeScreen: AppScreen
 ) {
-    val isDark = isSystemInDarkTheme()
-    val bgColor = if (isDark) GlassFrostedDark else GlassFrostedSurface
-    val borderColor = if (isDark) GlassFrostedDarkBorder else ModernBorder
-
-    Box(
+    Surface(
+        color = CardSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, BorderStroke),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp)
+            .zIndex(10f)
     ) {
-        // Frosted blur backdrop layer
-        Box(
+        Row(
             modifier = Modifier
-                .matchParentSize()
-                .blur(radius = 16.dp)
-                .background(if (isDark) Color(0xD90A0D14) else Color(0xECFFFFFF))
-        )
-        Surface(
-            color = bgColor,
-            border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
-            modifier = Modifier.fillMaxWidth()
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(ModernBlack)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeliveryDining,
-                            contentDescription = "Guelmim Express",
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "GUELMIM EXPRESS",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.5.sp,
-                                color = ModernBlack
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "كلميم",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = ModernMuted,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Text(
-                            text = "Bab Sahra • Gateway to the Sahara",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = ModernMuted,
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-
-                // Current Vehicle Mode Tag in Top Bar
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = ModernSurfaceSubtle,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(CardSurfaceVariant)
+                        .border(1.dp, BorderStroke, CircleShape)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = when (activeVehicle) {
-                                VehicleType.MOTORCYCLE -> Icons.Default.TwoWheeler
-                                VehicleType.ESCOOTER -> Icons.Default.ElectricScooter
-                                VehicleType.CAR -> Icons.Default.DirectionsCar
-                                VehicleType.BICYCLE -> Icons.Default.DirectionsBike
-                            },
-                            contentDescription = null,
-                            tint = ModernBlack,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
+                    Icon(
+                        imageVector = Icons.Default.DeliveryDining,
+                        contentDescription = "Guelmim Express",
+                        tint = AccentBlue,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = activeVehicle.title,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = ModernBlack
+                            text = "GUELMIM EXPRESS",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp,
+                            color = PrimaryText
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "كلميم",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = SecondaryText,
+                            fontWeight = FontWeight.Bold
                         )
                     }
+                    Text(
+                        text = "Bab Sahra • Gateway to the Sahara",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SecondaryText,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            // Current Vehicle Mode Tag in Top Bar
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = CardSurfaceVariant,
+                border = androidx.compose.foundation.BorderStroke(1.dp, BorderStroke)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = when (activeVehicle) {
+                            VehicleType.MOTORCYCLE -> Icons.Default.TwoWheeler
+                            VehicleType.ESCOOTER -> Icons.Default.ElectricScooter
+                            VehicleType.CAR -> Icons.Default.DirectionsCar
+                            VehicleType.BICYCLE -> Icons.Default.DirectionsBike
+                        },
+                        contentDescription = null,
+                        tint = AccentAmber,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = activeVehicle.title,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = PrimaryText
+                    )
                 }
             }
         }
@@ -395,28 +372,17 @@ fun ModernGuelmimBottomNavigationBar(
     activeScreen: AppScreen,
     onSelectScreen: (AppScreen) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val navBgColor = if (isDark) GlassFrostedDark else GlassFrostedSurface
-    val navBorderColor = if (isDark) GlassFrostedDarkBorder else ModernBorder
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(12.dp)
     ) {
-        // Frosted blur backdrop layer
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .blur(radius = 20.dp)
-                .background(if (isDark) Color(0xD90A0D14) else Color(0xECFFFFFF))
-        )
         NavigationBar(
-            containerColor = navBgColor,
+            containerColor = CardSurface,
             tonalElevation = 0.dp,
             modifier = Modifier
                 .navigationBarsPadding()
-                .border(width = 1.dp, color = navBorderColor)
+                .border(width = 1.dp, color = BorderStroke)
                 .testTag("guelmim_bottom_nav")
         ) {
             val navItems = listOf(
@@ -448,11 +414,11 @@ fun ModernGuelmimBottomNavigationBar(
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        selectedTextColor = if (isDark) Color.White else ModernBlack,
-                        indicatorColor = ModernBlack,
-                        unselectedIconColor = Color(0xFF9CA3AF),
-                        unselectedTextColor = Color(0xFF9CA3AF)
+                        selectedIconColor = PrimaryText,
+                        selectedTextColor = PrimaryText,
+                        indicatorColor = AccentBlue,
+                        unselectedIconColor = SecondaryText,
+                        unselectedTextColor = SecondaryText
                     ),
                     modifier = Modifier.testTag("nav_item_${screen.name.lowercase()}")
                 )
